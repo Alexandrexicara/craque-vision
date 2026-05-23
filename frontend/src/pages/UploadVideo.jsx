@@ -131,9 +131,7 @@ const UploadVideo = () => {
     setUploadProgress(0);
 
     const uploadFile = async (url, formData, onProgress) => {
-      const token = localStorage.getItem('token');
-      return axios.post(`http://localhost:5000/api${url}`, formData, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      return api.post(url, formData, {
         onUploadProgress: onProgress
       });
     };
