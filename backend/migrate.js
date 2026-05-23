@@ -4,7 +4,33 @@ const bcrypt = require('bcryptjs');
 async function migrate() {
   console.log('🔧 Verificando tabelas...');
 
-  // Cria as tabelas na ordem correta (respeitando foreign keys)
+  // Verifica se a tabela users tem id como PRIMARY KEY
+  let needsReset = false;
+  try {
+    const check = await pool.query(
+      `SELECT kcu.column_name 
+       FROM information_schema.table_constraints tc
+       JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+       WHERE tc.table_name = 'users' AND tc.constraint_type = 'PRIMARY KEY' AND kcu.column_name = 'id'`
+    );
+    // users existe mas id NÃO é primary key → schema corrompido
+    if (check.rows.length === 0) needsReset = true;
+  } catch (e) {
+    // users não existe → vai criar normalmente
+  }
+
+  // Se o schema estiver corrompido, recria tudo (banco vazio no Render)
+  if (needsReset) {
+    console.log('⚠️ Schema corrompido detectado, recriando tabelas...');
+    await pool.query('DROP TABLE IF EXISTS likes CASCADE');
+    await pool.query('DROP TABLE IF EXISTS favorites CASCADE');
+    await pool.query('DROP TABLE IF EXISTS payments CASCADE');
+    await pool.query('DROP TABLE IF EXISTS subscriptions CASCADE');
+    await pool.query('DROP TABLE IF EXISTS videos CASCADE');
+    await pool.query('DROP TABLE IF EXISTS athletes CASCADE');
+    await pool.query('DROP TABLE IF EXISTS users CASCADE');
+  }
+
   const tables = [
     `CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
