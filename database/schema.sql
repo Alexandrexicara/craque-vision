@@ -19,6 +19,7 @@ CREATE TABLE users (
     user_type VARCHAR(50) NOT NULL CHECK (user_type IN ('athlete', 'scout', 'club', 'admin')),
     email_verified BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
+    avatar VARCHAR(500),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -82,6 +83,7 @@ CREATE TABLE videos (
     -- Status
     status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
     rejection_reason TEXT,
+    payment_proof TEXT,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -92,9 +94,11 @@ CREATE TABLE subscriptions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     plan_name VARCHAR(100) NOT NULL,
-    status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'cancelled', 'expired')),
+    status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'cancelled', 'expired', 'pending_payment')),
     expires_at TIMESTAMP,
     payment_id VARCHAR(255),
+    payment_proof TEXT,
+    payment_status VARCHAR(50) DEFAULT 'pending',
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

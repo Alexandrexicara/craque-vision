@@ -14,6 +14,7 @@ const adminRoutes = require('./routes/admin.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const { startScheduler } = require('./scheduler');
+const migrate = require('./migrate');
 
 const app = express();
 
@@ -52,7 +53,13 @@ if (process.env.NODE_ENV === 'production') {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-  startScheduler();
+// Executa migração automática das tabelas (idempotente)
+migrate().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+    startScheduler();
+  });
+}).catch(err => {
+  console.error('❌ Erro na migração:', err.message);
+  process.exit(1);
 });
