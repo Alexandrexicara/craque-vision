@@ -1,0 +1,2 @@
+ANONIMO: canWatch=false, locked=true
+ADMIN: canWatch=true, videos=1, url=true

@@ -1,0 +1,3 @@
+ANONIMO: canWatch=false, videos=1, url=false, locked=true
+ADMIN(3): canWatch=true, videos=1, url=true, locked=false
+ATLETA(4): canWatch=true, videos=1, url=true, locked=false
