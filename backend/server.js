@@ -23,6 +23,7 @@ app.use(express.json());
 // Servir arquivos estáticos (vídeos enviados)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/athletes', athleteRoutes);
 app.use('/api/videos', videoRoutes);
@@ -32,12 +33,22 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/upload', uploadRoutes);
 
-app.get('/', (req, res) => {
-  res.json({
-    message: 'Craque Vision API Online',
-    version: '1.0.0'
+// Em produção, serve o frontend compilado (SPA)
+if (process.env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, '..', 'frontend', 'dist');
+  app.use(express.static(frontendPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
   });
-});
+  console.log('📦 Servindo frontend de:', frontendPath);
+} else {
+  app.get('/', (req, res) => {
+    res.json({
+      message: 'Craque Vision API Online',
+      version: '1.0.0'
+    });
+  });
+}
 
 const PORT = process.env.PORT || 5000;
 
