@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
   Users, Video, CreditCard, BarChart3, AlertCircle,
-  CheckCircle, XCircle, Trash2, Eye, Image
+  CheckCircle, XCircle, Trash2, Eye, Image, Upload, ImagePlus
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -12,7 +12,12 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [videos, setVideos] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [carousel, setCarousel] = useState([]);
+  const [carouselTitle, setCarouselTitle] = useState('');
+  const [carouselLink, setCarouselLink] = useState('');
+  const [carouselFile, setCarouselFile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const carouselInputRef = useRef(null);
 
   useEffect(() => {
     fetchData();
@@ -20,17 +25,19 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [statsRes, usersRes, videosRes, subsRes] = await Promise.all([
+      const [statsRes, usersRes, videosRes, subsRes, carouselRes] = await Promise.all([
         api.get('/admin/stats'),
         api.get('/admin/users'),
         api.get('/admin/videos'),
-        api.get('/admin/subscriptions')
+        api.get('/admin/subscriptions'),
+        api.get('/carousel/admin')
       ]);
 
       setStats(statsRes.data);
       setUsers(usersRes.data);
       setVideos(videosRes.data);
       setSubscriptions(subsRes.data);
+      setCarousel(carouselRes.data);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -92,6 +99,45 @@ const AdminDashboard = () => {
       fetchData();
     } catch (error) {
       console.error('Erro ao bloquear assinatura:', error);
+    }
+  };
+
+  // --- Carrossel handlers ---
+  const handleCarouselUpload = async (e) => {
+    e.preventDefault();
+    if (!carouselFile) return;
+    const formData = new FormData();
+    formData.append('image', carouselFile);
+    if (carouselTitle) formData.append('title', carouselTitle);
+    if (carouselLink) formData.append('link', carouselLink);
+    try {
+      await api.post('/carousel', formData);
+      setCarouselTitle('');
+      setCarouselLink('');
+      setCarouselFile(null);
+      if (carouselInputRef.current) carouselInputRef.current.value = '';
+      fetchData();
+    } catch (error) {
+      alert('Erro ao enviar imagem: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleCarouselDelete = async (id) => {
+    if (!confirm('Remover esta imagem do carrossel?')) return;
+    try {
+      await api.delete(`/carousel/${id}`);
+      fetchData();
+    } catch (error) {
+      alert('Erro ao remover imagem.');
+    }
+  };
+
+  const handleCarouselToggle = async (id, currentActive) => {
+    try {
+      await api.put(`/carousel/${id}`, { is_active: !currentActive });
+      fetchData();
+    } catch (error) {
+      alert('Erro ao atualizar.');
     }
   };
 
@@ -198,6 +244,14 @@ const AdminDashboard = () => {
               }`}
             >
               Assinaturas
+            </button>
+            <button
+              onClick={() => setActiveTab('carousel')}
+              className={`px-6 py-4 font-medium transition-colors ${
+                activeTab === 'carousel' ? 'text-accent border-b-2 border-accent' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Carrossel
             </button>
           </div>
 
@@ -426,6 +480,118 @@ const AdminDashboard = () => {
                     )}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {activeTab === 'carousel' && (
+              <div>
+                {/* Upload */}
+                <div className="card p-6 mb-6 bg-primary-dark/50">
+                  <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                    <ImagePlus className="w-5 h-5 text-accent" />
+                    Adicionar ao Carrossel
+                  </h3>
+                  <form onSubmit={handleCarouselUpload} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Título (opcional)</label>
+                        <input
+                          type="text"
+                          value={carouselTitle}
+                          onChange={(e) => setCarouselTitle(e.target.value)}
+                          placeholder="Ex: Promoção de Verão"
+                          className="w-full bg-primary-dark border border-gray-600 rounded-lg py-2 px-3 text-white placeholder-gray-500 focus:border-accent outline-none text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Link (opcional)</label>
+                        <input
+                          type="text"
+                          value={carouselLink}
+                          onChange={(e) => setCarouselLink(e.target.value)}
+                          placeholder="https://..."
+                          className="w-full bg-primary-dark border border-gray-600 rounded-lg py-2 px-3 text-white placeholder-gray-500 focus:border-accent outline-none text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Imagem *</label>
+                        <input
+                          ref={carouselInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setCarouselFile(e.target.files[0])}
+                          className="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-accent file:text-primary-dark file:font-medium hover:file:bg-accent/80"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!carouselFile}
+                      className="btn-primary py-2 px-6 disabled:opacity-50 flex items-center gap-2"
+                    >
+                      <Upload className="w-4 h-4" /> Enviar
+                    </button>
+                  </form>
+                </div>
+
+                {/* Lista */}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left border-b border-gray-700">
+                        <th className="pb-4 text-gray-400 font-medium">Imagem</th>
+                        <th className="pb-4 text-gray-400 font-medium">Título</th>
+                        <th className="pb-4 text-gray-400 font-medium">Link</th>
+                        <th className="pb-4 text-gray-400 font-medium">Ativo</th>
+                        <th className="pb-4 text-gray-400 font-medium">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {carousel.map((item) => (
+                        <tr key={item.id} className="border-b border-gray-700/50">
+                          <td className="py-3">
+                            <img src={item.image_url} alt="" className="w-24 h-16 object-cover rounded" />
+                          </td>
+                          <td className="py-3 text-white text-sm">{item.title || '—'}</td>
+                          <td className="py-3 text-gray-400 text-sm">
+                            {item.link ? (
+                              <a href={item.link} target="_blank" rel="noreferrer" className="text-accent hover:underline">
+                                {item.link.length > 40 ? item.link.substring(0, 40) + '...' : item.link}
+                              </a>
+                            ) : '—'}
+                          </td>
+                          <td className="py-3">
+                            <button
+                              onClick={() => handleCarouselToggle(item.id, item.is_active)}
+                              className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
+                                item.is_active
+                                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                  : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
+                              }`}
+                            >
+                              {item.is_active ? 'Sim' : 'Não'}
+                            </button>
+                          </td>
+                          <td className="py-3">
+                            <button
+                              onClick={() => handleCarouselDelete(item.id)}
+                              className="text-red-400 hover:text-red-300 transition-colors"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {carousel.length === 0 && (
+                        <tr>
+                          <td colSpan="5" className="py-8 text-center text-gray-500">
+                            Nenhuma imagem no carrossel. Adicione a primeira!
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>

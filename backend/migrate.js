@@ -130,6 +130,16 @@ async function migrate() {
       video_id INTEGER REFERENCES videos(id) ON DELETE CASCADE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(user_id, video_id)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS carousel (
+      id SERIAL PRIMARY KEY,
+      image_url TEXT NOT NULL,
+      title VARCHAR(255),
+      link VARCHAR(500),
+      is_active BOOLEAN DEFAULT TRUE,
+      sort_order INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`
   ];
 

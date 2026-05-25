@@ -13,6 +13,7 @@ const clubRoutes = require('./routes/club.routes');
 const adminRoutes = require('./routes/admin.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const carouselRoutes = require('./routes/carousel.routes');
 const { startScheduler } = require('./scheduler');
 const migrate = require('./migrate');
 
@@ -33,6 +34,7 @@ app.use('/api/clubs', clubRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/carousel', carouselRoutes);
 
 // Em produção, serve o frontend compilado (SPA)
 if (process.env.NODE_ENV === 'production') {

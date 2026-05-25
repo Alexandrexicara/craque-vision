@@ -15,6 +15,7 @@ import ClubPlans from './pages/ClubPlans';
 import SubscriptionPayment from './pages/SubscriptionPayment';
 import AdminDashboard from './pages/AdminDashboard';
 import Contact from './pages/Contact';
+import CarouselBanner from './components/CarouselBanner';
 import PrivateRoute from './components/PrivateRoute';
 
 console.log('✅ App.jsx carregado com sucesso');
@@ -26,6 +27,7 @@ function App() {
         <BrowserRouter>
           <div className="min-h-screen flex flex-col">
             <Navbar />
+            <CarouselBanner />
             <main className="flex-grow">
               <Routes>
                 <Route path="/" element={<Home />} />
@@ -63,6 +65,7 @@ function App() {
                 } />
               </Routes>
             </main>
+            <CarouselBanner />
             <Footer />
           </div>
         </BrowserRouter>
