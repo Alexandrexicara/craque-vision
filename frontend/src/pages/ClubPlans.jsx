@@ -31,7 +31,12 @@ const ClubPlans = () => {
 
   const handleSubscribe = (planKey) => {
     if (!isAuthenticated) {
-      navigate('/register');
+      navigate('/register?tipo=scout');
+      return;
+    }
+    // Se for atleta, não pode assinar planos de scout/clube
+    if (user?.user_type === 'athlete') {
+      alert('Planos de clube/olheiro exigem conta do tipo "Olheiro" ou "Clube". Crie uma nova conta com o tipo correto.');
       return;
     }
     navigate(`/pagamento?plano=${planKey}`);

@@ -12,6 +12,7 @@
 - [UploadVideo.jsx](file://frontend/src/pages/UploadVideo.jsx)
 - [SearchAthletes.jsx](file://frontend/src/pages/SearchAthletes.jsx)
 - [ClubPlans.jsx](file://frontend/src/pages/ClubPlans.jsx)
+- [SubscriptionPayment.jsx](file://frontend/src/pages/SubscriptionPayment.jsx)
 - [Navbar.jsx](file://frontend/src/components/Navbar.jsx)
 - [Footer.jsx](file://frontend/src/components/Footer.jsx)
 - [AthleteCard.jsx](file://frontend/src/components/AthleteCard.jsx)
@@ -32,7 +33,7 @@
 9. [Conclusion](#conclusion)
 
 ## Introduction
-This document provides comprehensive documentation for all Craque-Vision page components. It explains the Home page layout and featured content display, the Login and Register pages with form validation and error handling, the AthleteDashboard for athlete profile management, video uploads, and personal analytics, the ScoutDashboard for searching athletes, managing favorites, and accessing premium features, the AdminDashboard for platform administration and user management, the AthleteProfile page for public profile viewing, the UploadVideo page with file selection, preview, and submission workflows, the SearchAthletes page with filtering, sorting, and result presentation, and the ClubPlans page for subscription management and payment processing.
+This document provides comprehensive documentation for all Craque-Vision page components. It explains the Home page layout and featured content display, the Login and Register pages with form validation and error handling, the AthleteDashboard for athlete profile management, video uploads, and personal analytics, the ScoutDashboard for searching athletes, managing favorites, and accessing premium features, the AdminDashboard for platform administration and user management, the AthleteProfile page for public profile viewing, the UploadVideo page with file selection, preview, and submission workflows, the SearchAthletes page with filtering, sorting, and result presentation, the ClubPlans page for subscription management and payment processing, and the new SubscriptionPayment page component with subscription selection, PIX payment processing, and status tracking.
 
 ## Project Structure
 The frontend is organized by pages and shared components. Pages are React functional components under frontend/src/pages. Shared UI components live under frontend/src/components. Authentication state is centralized via a React context provider. HTTP requests are handled by a shared Axios service with interceptors for auth tokens and automatic redirects on 401 responses.
@@ -50,6 +51,7 @@ AthleteProfile["AthleteProfile.jsx"]
 UploadVideo["UploadVideo.jsx"]
 SearchAthletes["SearchAthletes.jsx"]
 ClubPlans["ClubPlans.jsx"]
+SubscriptionPayment["SubscriptionPayment.jsx"]
 end
 subgraph "Shared Components"
 Navbar["Navbar.jsx"]
@@ -71,6 +73,7 @@ AthleteProfile --> Navbar
 UploadVideo --> Navbar
 SearchAthletes --> Navbar
 ClubPlans --> Navbar
+SubscriptionPayment --> Navbar
 Home --> Footer
 Login --> Footer
 Register --> Footer
@@ -81,6 +84,7 @@ AthleteProfile --> Footer
 UploadVideo --> Footer
 SearchAthletes --> Footer
 ClubPlans --> Footer
+SubscriptionPayment --> Footer
 Home --> Api
 Login --> AuthCtx
 Register --> AuthCtx
@@ -91,6 +95,7 @@ AthleteProfile --> Api
 UploadVideo --> Api
 SearchAthletes --> Api
 ClubPlans --> Api
+SubscriptionPayment --> Api
 AthleteDash --> AthleteCard
 ScoutDash --> AthleteCard
 SearchAthletes --> AthleteCard
@@ -110,12 +115,13 @@ Home --> VideoCard
 - [UploadVideo.jsx:1-234](file://frontend/src/pages/UploadVideo.jsx#L1-L234)
 - [SearchAthletes.jsx:1-218](file://frontend/src/pages/SearchAthletes.jsx#L1-L218)
 - [ClubPlans.jsx:1-209](file://frontend/src/pages/ClubPlans.jsx#L1-L209)
+- [SubscriptionPayment.jsx:1-344](file://frontend/src/pages/SubscriptionPayment.jsx#L1-L344)
 - [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
 - [AthleteCard.jsx:1-92](file://frontend/src/components/AthleteCard.jsx#L1-L92)
 - [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
-- [AuthContext.jsx:1-91](file://frontend/src/context/AuthContext.jsx#L1-L91)
-- [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
+- [AuthContext.jsx:1-100](file://frontend/src/context/AuthContext.jsx#L1-L100)
+- [api.js:1-42](file://frontend/src/services/api.js#L1-L42)
 
 **Section sources**
 - [Home.jsx:1-231](file://frontend/src/pages/Home.jsx#L1-L231)
@@ -128,12 +134,13 @@ Home --> VideoCard
 - [UploadVideo.jsx:1-234](file://frontend/src/pages/UploadVideo.jsx#L1-L234)
 - [SearchAthletes.jsx:1-218](file://frontend/src/pages/SearchAthletes.jsx#L1-L218)
 - [ClubPlans.jsx:1-209](file://frontend/src/pages/ClubPlans.jsx#L1-L209)
+- [SubscriptionPayment.jsx:1-344](file://frontend/src/pages/SubscriptionPayment.jsx#L1-L344)
 - [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
 - [AthleteCard.jsx:1-92](file://frontend/src/components/AthleteCard.jsx#L1-L92)
 - [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
-- [AuthContext.jsx:1-91](file://frontend/src/context/AuthContext.jsx#L1-L91)
-- [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
+- [AuthContext.jsx:1-100](file://frontend/src/context/AuthContext.jsx#L1-L100)
+- [api.js:1-42](file://frontend/src/services/api.js#L1-L42)
 
 ## Core Components
 - Authentication Context: Centralizes login, registration, logout, and user state. Persists token and user in localStorage and attaches Authorization header automatically.
@@ -146,8 +153,8 @@ Key responsibilities:
 - AthleteCard and VideoCard: Presentational components for lists and grids.
 
 **Section sources**
-- [AuthContext.jsx:1-91](file://frontend/src/context/AuthContext.jsx#L1-L91)
-- [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
+- [AuthContext.jsx:1-100](file://frontend/src/context/AuthContext.jsx#L1-L100)
+- [api.js:1-42](file://frontend/src/services/api.js#L1-L42)
 - [AthleteCard.jsx:1-92](file://frontend/src/components/AthleteCard.jsx#L1-L92)
 - [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
 
@@ -183,8 +190,8 @@ P->>P : Navigate based on user_type
 
 **Section sources**
 - [Login.jsx:1-134](file://frontend/src/pages/Login.jsx#L1-L134)
-- [AuthContext.jsx:1-91](file://frontend/src/context/AuthContext.jsx#L1-L91)
-- [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
+- [AuthContext.jsx:1-100](file://frontend/src/context/AuthContext.jsx#L1-L100)
+- [api.js:1-42](file://frontend/src/services/api.js#L1-L42)
 
 ## Detailed Component Analysis
 
@@ -246,7 +253,7 @@ ShowError --> End
 
 **Section sources**
 - [Login.jsx:1-134](file://frontend/src/pages/Login.jsx#L1-L134)
-- [AuthContext.jsx:1-91](file://frontend/src/context/AuthContext.jsx#L1-L91)
+- [AuthContext.jsx:1-100](file://frontend/src/context/AuthContext.jsx#L1-L100)
 
 ### Register Page
 Purpose:
@@ -278,7 +285,7 @@ ShowErr2 --> End
 
 **Section sources**
 - [Register.jsx:1-287](file://frontend/src/pages/Register.jsx#L1-L287)
-- [AuthContext.jsx:1-91](file://frontend/src/context/AuthContext.jsx#L1-L91)
+- [AuthContext.jsx:1-100](file://frontend/src/context/AuthContext.jsx#L1-L100)
 
 ### AthleteDashboard
 Purpose:
@@ -487,6 +494,49 @@ CP->>CP : Navigate to /scout or /register
 **Section sources**
 - [ClubPlans.jsx:1-209](file://frontend/src/pages/ClubPlans.jsx#L1-L209)
 
+### SubscriptionPayment
+Purpose:
+- Process subscription payments for scouts and clubs using PIX transfer with proof-of-payment verification.
+
+Key behaviors:
+- Plan selection with predefined pricing tiers (Basic, Pro, Elite Club).
+- Subscription creation workflow with pending payment status.
+- PIX payment instructions with copy-to-clipboard functionality.
+- Proof-of-payment upload with file validation (JPG, PNG, PDF up to 5MB).
+- Real-time subscription status tracking (Active, Pending Approval, Rejected).
+- Admin approval workflow for payment verification.
+
+```mermaid
+sequenceDiagram
+participant SP as "SubscriptionPayment"
+participant A as "api.js"
+participant S as "Backend API"
+SP->>SP : useEffect(checkExistingSubscription)
+SP->>A : GET /payments/subscription/status
+A->>S : HTTP request
+S-->>A : {has_subscription, subscription}
+A-->>SP : Response
+SP->>SP : handleCreateSubscription()
+SP->>A : POST /payments/subscription
+A->>S : HTTP request with plan_name
+S-->>A : {subscription}
+A-->>SP : Response
+SP->>SP : handleUploadProof()
+SP->>A : POST /payments/subscription/proof (FormData)
+A->>S : HTTP request with proof file
+S-->>A : {subscription}
+A-->>SP : Response
+SP->>SP : Render status cards (Active/Pending/Rejected)
+```
+
+**Diagram sources**
+- [SubscriptionPayment.jsx:38-59](file://frontend/src/pages/SubscriptionPayment.jsx#L38-L59)
+- [SubscriptionPayment.jsx:61-70](file://frontend/src/pages/SubscriptionPayment.jsx#L61-L70)
+- [SubscriptionPayment.jsx:82-107](file://frontend/src/pages/SubscriptionPayment.jsx#L82-L107)
+
+**Section sources**
+- [SubscriptionPayment.jsx:1-344](file://frontend/src/pages/SubscriptionPayment.jsx#L1-L344)
+
 ## Dependency Analysis
 - Pages depend on:
   - AuthContext for authentication state and methods.
@@ -509,6 +559,7 @@ AthleteProfile["AthleteProfile.jsx"] --> Api
 UploadVideo["UploadVideo.jsx"] --> Api
 SearchAthletes["SearchAthletes.jsx"] --> Api
 ClubPlans["ClubPlans.jsx"] --> Api
+SubscriptionPayment["SubscriptionPayment.jsx"] --> Api
 Navbar["Navbar.jsx"] --> AuthCtx
 Navbar --> Api
 Footer["Footer.jsx"] --> Api
@@ -527,16 +578,17 @@ VideoCard["VideoCard.jsx"] --> Api
 - [UploadVideo.jsx:1-234](file://frontend/src/pages/UploadVideo.jsx#L1-L234)
 - [SearchAthletes.jsx:1-218](file://frontend/src/pages/SearchAthletes.jsx#L1-L218)
 - [ClubPlans.jsx:1-209](file://frontend/src/pages/ClubPlans.jsx#L1-L209)
+- [SubscriptionPayment.jsx:1-344](file://frontend/src/pages/SubscriptionPayment.jsx#L1-L344)
 - [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
 - [AthleteCard.jsx:1-92](file://frontend/src/components/AthleteCard.jsx#L1-L92)
 - [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
-- [AuthContext.jsx:1-91](file://frontend/src/context/AuthContext.jsx#L1-L91)
-- [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
+- [AuthContext.jsx:1-100](file://frontend/src/context/AuthContext.jsx#L1-L100)
+- [api.js:1-42](file://frontend/src/services/api.js#L1-L42)
 
 **Section sources**
-- [AuthContext.jsx:1-91](file://frontend/src/context/AuthContext.jsx#L1-L91)
-- [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
+- [AuthContext.jsx:1-100](file://frontend/src/context/AuthContext.jsx#L1-L100)
+- [api.js:1-42](file://frontend/src/services/api.js#L1-L42)
 - [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
 - [AthleteCard.jsx:1-92](file://frontend/src/components/AthleteCard.jsx#L1-L92)
@@ -547,6 +599,7 @@ VideoCard["VideoCard.jsx"] --> Api
 - Skeleton loaders: Home, SearchAthletes, and others use skeleton placeholders to improve perceived performance during async loads.
 - Conditional rendering: ScoutDashboard avoids heavy computations when subscription is inactive.
 - Minimal re-renders: Pages use controlled forms and local state updates to avoid unnecessary renders.
+- File upload optimization: SubscriptionPayment uses FormData with proper boundary handling and file size validation.
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -564,6 +617,14 @@ Common issues and resolutions:
 - UploadVideo submission errors:
   - Symptom: Error banner after submission.
   - Resolution: Ensure required fields are filled and video URL is valid; retry submission.
+- SubscriptionPayment file upload issues:
+  - Symptom: Error when uploading proof-of-payment.
+  - Cause: File size exceeds 5MB limit or invalid file type.
+  - Resolution: Use JPG, PNG, or PDF files under 5MB; retry upload.
+- Subscription status not updating:
+  - Symptom: Payment approved but status still shows pending.
+  - Cause: Admin approval required for manual verification.
+  - Resolution: Wait for admin approval or contact support for assistance.
 
 **Section sources**
 - [Login.jsx:59-64](file://frontend/src/pages/Login.jsx#L59-L64)
@@ -571,6 +632,8 @@ Common issues and resolutions:
 - [api.js:23-33](file://frontend/src/services/api.js#L23-L33)
 - [ScoutDashboard.jsx:58-76](file://frontend/src/pages/ScoutDashboard.jsx#L58-L76)
 - [UploadVideo.jsx:73-85](file://frontend/src/pages/UploadVideo.jsx#L73-L85)
+- [SubscriptionPayment.jsx:72-80](file://frontend/src/pages/SubscriptionPayment.jsx#L72-L80)
+- [SubscriptionPayment.jsx:102-106](file://frontend/src/pages/SubscriptionPayment.jsx#L102-L106)
 
 ## Conclusion
-Craque-Vision’s page components are structured around clear separation of concerns: authentication state is centralized, HTTP communication is standardized, and reusable components ensure consistent UI. Each page implements robust data fetching, validation, and error handling tailored to its role—onboarding, athlete management, scouting, administration, public profiles, video submission, discovery, and subscription management.
+Craque-Vision's page components are structured around clear separation of concerns: authentication state is centralized, HTTP communication is standardized, and reusable components ensure consistent UI. Each page implements robust data fetching, validation, and error handling tailored to its role—onboarding, athlete management, scouting, administration, public profiles, video submission, discovery, subscription management, and the new subscription payment processing workflow with PIX integration and admin approval processes.

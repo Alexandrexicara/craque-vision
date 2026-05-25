@@ -10,9 +10,17 @@
 - [subscription.model.js](file://backend/models/subscription.model.js)
 - [favorite.model.js](file://backend/models/favorite.model.js)
 - [like.model.js](file://backend/models/like.model.js)
+- [videoCredit.model.js](file://backend/models/videoCredit.model.js)
 - [payment.controller.js](file://backend/controllers/payment.controller.js)
 - [server.js](file://backend/server.js)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added new VideoCredit model documentation for video upload permission management
+- Updated Video model to include payment_proof field for video credit system integration
+- Enhanced payment controller documentation to reflect video credit payment processing
+- Added video credit system architecture and business logic documentation
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -26,10 +34,10 @@
 9. [Conclusion](#conclusion)
 
 ## Introduction
-This document provides comprehensive data model documentation for Craque-Vision’s core entities. It covers the User model with role-based access control, the Athlete model with a detailed sports profile, the Video model with media management capabilities, the Subscription model with billing integration, and the Favorite/Like models for user engagement tracking. For each model, we explain field definitions, validation rules, business logic, relationships, data access patterns, ORM implementation details, connection pooling configuration, query optimization strategies, and data lifecycle management.
+This document provides comprehensive data model documentation for Craque-Vision's core entities. It covers the User model with role-based access control, the Athlete model with a detailed sports profile, the Video model with media management capabilities, the Subscription model with billing integration, the VideoCredit model for video upload permission management, and the Favorite/Like models for user engagement tracking. For each model, we explain field definitions, validation rules, business logic, relationships, data access patterns, ORM implementation details, connection pooling configuration, query optimization strategies, and data lifecycle management.
 
 ## Project Structure
-The data models are implemented as lightweight classes per entity, backed by a PostgreSQL connection pool configured via environment variables. The schema defines all tables, constraints, indexes, and triggers. Controllers orchestrate business flows, including payment creation and subscription activation.
+The data models are implemented as lightweight classes per entity, backed by a PostgreSQL connection pool configured via environment variables. The schema defines all tables, constraints, indexes, and triggers. Controllers orchestrate business flows, including payment creation, subscription activation, and video credit management. The new video credit system adds a layer of permission control for video uploads through a credit-based mechanism.
 
 ```mermaid
 graph TB
@@ -39,8 +47,9 @@ UM["Model: user.model.js"]
 AM["Model: athlete.model.js"]
 VM["Model: video.model.js"]
 SM["Model: subscription.model.js"]
-FM["Model: favorite.model.js"]
-LM["Model: like.model.js"]
+FCM["Model: favorite.model.js"]
+LCM["Model: like.model.js"]
+VCM["Model: videoCredit.model.js"]
 PC["Controller: payment.controller.js"]
 SRV["Server: server.js"]
 end
@@ -53,30 +62,32 @@ UM --> CFG
 AM --> CFG
 VM --> CFG
 SM --> CFG
-FM --> CFG
-LM --> CFG
+FCM --> CFG
+LCM --> CFG
+VCM --> CFG
 CFG --> SCH
 ```
 
 **Diagram sources**
 - [database.js:1-13](file://backend/config/database.js#L1-L13)
-- [schema.sql:1-185](file://database/schema.sql#L1-L185)
+- [schema.sql:1-189](file://database/schema.sql#L1-L189)
 - [user.model.js:1-42](file://backend/models/user.model.js#L1-L42)
 - [athlete.model.js:1-119](file://backend/models/athlete.model.js#L1-L119)
-- [video.model.js:1-61](file://backend/models/video.model.js#L1-L61)
+- [video.model.js:1-78](file://backend/models/video.model.js#L1-L78)
 - [subscription.model.js:1-55](file://backend/models/subscription.model.js#L1-L55)
 - [favorite.model.js:1-52](file://backend/models/favorite.model.js#L1-L52)
 - [like.model.js:1-61](file://backend/models/like.model.js#L1-L61)
-- [payment.controller.js:1-108](file://backend/controllers/payment.controller.js#L1-L108)
+- [videoCredit.model.js:1-55](file://backend/models/videoCredit.model.js#L1-L55)
+- [payment.controller.js:1-205](file://backend/controllers/payment.controller.js#L1-L205)
 - [server.js:1-40](file://backend/server.js#L1-L40)
 
 **Section sources**
 - [server.js:1-40](file://backend/server.js#L1-L40)
 - [database.js:1-13](file://backend/config/database.js#L1-L13)
-- [schema.sql:1-185](file://database/schema.sql#L1-L185)
+- [schema.sql:1-189](file://database/schema.sql#L1-L189)
 
 ## Core Components
-This section outlines each model’s purpose, fields, validations, and relationships.
+This section outlines each model's purpose, fields, validations, and relationships.
 
 - User
   - Purpose: Authentication and role-based access control.
@@ -95,9 +106,9 @@ This section outlines each model’s purpose, fields, validations, and relations
   - Lifecycle: updated_at auto-updated via trigger.
 
 - Video
-  - Purpose: Media management for athlete showcases.
-  - Key fields: athlete_id (FK), video_url, thumbnail, title, type, description, views (default 0), status (check), rejection_reason, timestamps.
-  - Validation: status constrained; default pending; unique video_url conceptually implied by business rules.
+  - Purpose: Media management for athlete showcases with credit-based upload permissions.
+  - Key fields: athlete_id (FK), video_url, thumbnail, title, type, description, views (default 0), status (check), rejection_reason, payment_proof, timestamps.
+  - Validation: status constrained; default pending; payment_proof field added for credit verification.
   - Relationships: Belongs to Athlete; many-to-one with Likes; referenced by Favorites indirectly via athlete.
   - Access patterns: create, findByAthleteId, findById (with joins), getFeatured, delete.
   - Lifecycle: updated_at auto-updated via trigger.
@@ -108,6 +119,14 @@ This section outlines each model’s purpose, fields, validations, and relations
   - Validation: status constrained; active/expired checks in queries.
   - Relationships: Belongs to User; linked to Payments via payment_id.
   - Access patterns: create, findByUserId (latest), isActive (boolean), updateStatus.
+  - Lifecycle: updated_at auto-updated via trigger.
+
+- VideoCredit
+  - Purpose: Manage video upload permissions through a credit-based system.
+  - Key fields: user_id (FK), total_videos, used_videos, timestamps.
+  - Validation: used_videos cannot exceed total_videos; automatic credit tracking.
+  - Relationships: One-to-one with User; manages video upload permissions.
+  - Access patterns: getByUserId, addCredits, useCredit, getRemaining.
   - Lifecycle: updated_at auto-updated via trigger.
 
 - Favorite
@@ -129,14 +148,15 @@ This section outlines each model’s purpose, fields, validations, and relations
 **Section sources**
 - [user.model.js:1-42](file://backend/models/user.model.js#L1-L42)
 - [athlete.model.js:1-119](file://backend/models/athlete.model.js#L1-L119)
-- [video.model.js:1-61](file://backend/models/video.model.js#L1-L61)
+- [video.model.js:1-78](file://backend/models/video.model.js#L1-L78)
 - [subscription.model.js:1-55](file://backend/models/subscription.model.js#L1-L55)
 - [favorite.model.js:1-52](file://backend/models/favorite.model.js#L1-L52)
 - [like.model.js:1-61](file://backend/models/like.model.js#L1-L61)
-- [schema.sql:14-185](file://database/schema.sql#L14-L185)
+- [videoCredit.model.js:1-55](file://backend/models/videoCredit.model.js#L1-L55)
+- [schema.sql:14-189](file://database/schema.sql#L14-L189)
 
 ## Architecture Overview
-The data access layer uses a single PostgreSQL connection pool configured from environment variables. Each model encapsulates CRUD and business-specific queries. Payment flows create subscriptions and update statuses, integrating with the Subscription model.
+The data access layer uses a single PostgreSQL connection pool configured from environment variables. Each model encapsulates CRUD and business-specific queries. Payment flows create subscriptions and update statuses, integrating with the Subscription model. The new video credit system adds a permission layer for video uploads, requiring users to have sufficient credits before uploading videos.
 
 ```mermaid
 classDiagram
@@ -166,6 +186,12 @@ class Subscription {
 +isActive(userId)
 +updateStatus(id, status)
 }
+class VideoCredit {
++getByUserId(userId)
++addCredits(userId, quantity)
++useCredit(userId)
++getRemaining(userId)
+}
 class Favorite {
 +create(favoriteData)
 +findByUserId(userId)
@@ -182,6 +208,7 @@ class Like {
 User "1" <-- "1..*" Favorite : "has"
 User "1" <-- "1..*" Like : "has"
 User "1" <-- "1" Athlete : "has"
+User "1" <-- "1..*" VideoCredit : "has"
 Athlete "1..*" <-- "1..*" Video : "owns"
 User "1" <-- "1..*" Subscription : "has"
 ```
@@ -189,8 +216,9 @@ User "1" <-- "1..*" Subscription : "has"
 **Diagram sources**
 - [user.model.js:1-42](file://backend/models/user.model.js#L1-L42)
 - [athlete.model.js:1-119](file://backend/models/athlete.model.js#L1-L119)
-- [video.model.js:1-61](file://backend/models/video.model.js#L1-L61)
+- [video.model.js:1-78](file://backend/models/video.model.js#L1-L78)
 - [subscription.model.js:1-55](file://backend/models/subscription.model.js#L1-L55)
+- [videoCredit.model.js:1-55](file://backend/models/videoCredit.model.js#L1-L55)
 - [favorite.model.js:1-52](file://backend/models/favorite.model.js#L1-L52)
 - [like.model.js:1-61](file://backend/models/like.model.js#L1-L61)
 
@@ -245,7 +273,7 @@ U-->>C : "User record"
 
 **Section sources**
 - [user.model.js:1-42](file://backend/models/user.model.js#L1-L42)
-- [schema.sql:14-24](file://database/schema.sql#L14-L24)
+- [schema.sql:14-25](file://database/schema.sql#L14-L25)
 - [database.js:1-13](file://backend/config/database.js#L1-L13)
 
 ### Athlete Model
@@ -304,21 +332,22 @@ Exec --> End(["Return rows"])
 
 **Section sources**
 - [athlete.model.js:1-119](file://backend/models/athlete.model.js#L1-L119)
-- [schema.sql:27-67](file://database/schema.sql#L27-L67)
+- [schema.sql:27-68](file://database/schema.sql#L27-L68)
 - [database.js:1-13](file://backend/config/database.js#L1-L13)
 
 ### Video Model
 - Field definitions and constraints
   - video_url, title required; thumbnail optional; type optional; description optional.
-  - views default 0; status constrained; rejection_reason optional.
+  - views default 0; status constrained; rejection_reason optional; payment_proof added for credit verification.
 - Validation rules
   - status constrained to pending/approved/rejected.
 - Business logic
   - Featured feed aggregates latest videos with athlete and user names.
+  - Payment proof field enables video credit verification workflow.
 - Relationships
   - Belongs to Athlete; many-to-one with Likes; indirectly referenced by Favorites via athlete.
 - Data access patterns
-  - create: insert video metadata.
+  - create: insert video metadata including payment_proof.
   - findByAthleteId: list videos ordered by recency.
   - findById: join with athlete and user for context.
   - getFeatured: limit featured selection.
@@ -348,12 +377,12 @@ V-->>C : "Featured videos"
 ```
 
 **Diagram sources**
-- [video.model.js:40-51](file://backend/models/video.model.js#L40-L51)
+- [video.model.js:54-68](file://backend/models/video.model.js#L54-L68)
 - [database.js:4-10](file://backend/config/database.js#L4-L10)
 
 **Section sources**
-- [video.model.js:1-61](file://backend/models/video.model.js#L1-L61)
-- [schema.sql:69-88](file://database/schema.sql#L69-L88)
+- [video.model.js:1-78](file://backend/models/video.model.js#L1-L78)
+- [schema.sql:70-90](file://database/schema.sql#L70-L90)
 - [database.js:1-13](file://backend/config/database.js#L1-L13)
 
 ### Subscription Model
@@ -401,7 +430,64 @@ S-->>C : "Boolean"
 
 **Section sources**
 - [subscription.model.js:1-55](file://backend/models/subscription.model.js#L1-L55)
-- [schema.sql:90-101](file://database/schema.sql#L90-L101)
+- [schema.sql:92-105](file://database/schema.sql#L92-L105)
+- [database.js:1-13](file://backend/config/database.js#L1-L13)
+
+### VideoCredit Model
+- Field definitions and constraints
+  - user_id (FK) required; total_videos (default 0); used_videos (default 0); timestamps.
+  - used_videos cannot exceed total_videos constraint enforced via WHERE clause.
+- Validation rules
+  - Credit usage prevented when total_videos - used_videos <= 0.
+  - Automatic timestamp updates on modifications.
+- Business logic
+  - getByUserId: retrieve user's credit balance.
+  - addCredits: add credits to existing or new credit record.
+  - useCredit: consume 1 credit for video upload.
+  - getRemaining: calculate available credits.
+- Relationships
+  - One-to-one with User; manages video upload permissions.
+- Data access patterns
+  - getByUserId: fetch credit details.
+  - addCredits: create or update credit balance.
+  - useCredit: decrement used_videos atomically.
+  - getRemaining: compute remaining credits.
+- ORM implementation details
+  - Uses pg.Pool for all queries.
+- Connection pooling configuration
+  - Same pool as other models.
+- Query optimization strategies
+  - No specific indexes needed; simple lookup pattern.
+  - Triggers update updated_at automatically.
+- Data lifecycle management
+  - created_at/updated_at managed by DB; updated_at via trigger.
+
+```mermaid
+sequenceDiagram
+participant C as "Client"
+participant VC as "VideoCredit Model"
+participant P as "Pool"
+participant DB as "PostgreSQL"
+C->>VC : "useCredit(userId)"
+VC->>VC : "Check remaining credits"
+alt Credits available
+VC->>P : "UPDATE video_credits SET used_videos = used_videos + 1 WHERE user_id = $1 AND (total_videos - used_videos) > 0"
+P->>DB : "Execute query"
+DB-->>P : "Updated row or null"
+P-->>VC : "Result rows"
+VC-->>C : "Credit used successfully"
+else No credits available
+VC-->>C : "Insufficient credits"
+end
+```
+
+**Diagram sources**
+- [videoCredit.model.js:34-44](file://backend/models/videoCredit.model.js#L34-L44)
+- [database.js:4-10](file://backend/config/database.js#L4-L10)
+
+**Section sources**
+- [videoCredit.model.js:1-55](file://backend/models/videoCredit.model.js#L1-L55)
+- [schema.sql:144-189](file://database/schema.sql#L144-L189)
 - [database.js:1-13](file://backend/config/database.js#L1-L13)
 
 ### Favorite Model
@@ -447,7 +533,7 @@ F-->>C : "Favorites list"
 
 **Section sources**
 - [favorite.model.js:1-52](file://backend/models/favorite.model.js#L1-L52)
-- [schema.sql:120-128](file://database/schema.sql#L120-L128)
+- [schema.sql:124-132](file://database/schema.sql#L124-L132)
 - [database.js:1-13](file://backend/config/database.js#L1-L13)
 
 ### Like Model
@@ -494,13 +580,14 @@ L-->>C : "Integer count"
 
 **Section sources**
 - [like.model.js:1-61](file://backend/models/like.model.js#L1-L61)
-- [schema.sql:130-138](file://database/schema.sql#L130-L138)
+- [schema.sql:134-142](file://database/schema.sql#L134-L142)
 - [database.js:1-13](file://backend/config/database.js#L1-L13)
 
 ## Dependency Analysis
 - Internal dependencies
   - All models depend on the shared pg.Pool from database.js.
   - Controllers depend on models for business operations.
+  - Video controller now integrates with video credit system.
 - External dependencies
   - bcryptjs for password hashing.
   - pg for PostgreSQL connectivity.
@@ -509,6 +596,8 @@ L-->>C : "Integer count"
   - None observed among models; controllers import models as needed.
 - Integration points
   - Payment controller creates subscriptions after payment confirmation.
+  - Video credit system integrates with payment processing workflow.
+  - Admin approval process manages video credit allocation.
 
 ```mermaid
 graph LR
@@ -518,17 +607,23 @@ UM["User Model"]
 AM["Athlete Model"]
 VM["Video Model"]
 SM["Subscription Model"]
+VCM["VideoCredit Model"]
 FM["Favorite Model"]
 LM["Like Model"]
 PC["Payment Controller"]
+VC["Video Controller"]
 Pool --> DB
 UM --> Pool
 AM --> Pool
 VM --> Pool
 SM --> Pool
+VCM --> Pool
 FM --> Pool
 LM --> Pool
 PC --> SM
+VC --> VM
+VC --> AM
+VCM --> PC
 ```
 
 **Diagram sources**
@@ -537,13 +632,16 @@ PC --> SM
 - [athlete.model.js](file://backend/models/athlete.model.js#L1)
 - [video.model.js](file://backend/models/video.model.js#L1)
 - [subscription.model.js](file://backend/models/subscription.model.js#L1)
+- [videoCredit.model.js](file://backend/models/videoCredit.model.js#L1)
 - [favorite.model.js](file://backend/models/favorite.model.js#L1)
 - [like.model.js](file://backend/models/like.model.js#L1)
 - [payment.controller.js](file://backend/controllers/payment.controller.js#L1)
+- [video.controller.js](file://backend/controllers/video.controller.js#L1)
 
 **Section sources**
 - [database.js:1-13](file://backend/config/database.js#L1-L13)
-- [payment.controller.js:1-108](file://backend/controllers/payment.controller.js#L1-L108)
+- [payment.controller.js:1-205](file://backend/controllers/payment.controller.js#L1-L205)
+- [video.controller.js:1-168](file://backend/controllers/video.controller.js#L1-L168)
 
 ## Performance Considerations
 - Indexes
@@ -553,15 +651,18 @@ PC --> SM
   - Subscriptions: user_id, status.
   - Favorites: user_id, athlete_id.
   - Likes: user_id, video_id.
+  - VideoCredits: user_id (recommended for performance).
 - Triggers
   - Automatic updated_at updates reduce application-side overhead.
 - Query patterns
   - Parameterized queries prevent SQL injection and enable plan reuse.
   - LIMIT clauses for pagination and featured feeds.
+  - Atomic UPDATE operations for credit management.
 - Connection pooling
   - Single pool shared across models; ensure adequate pool size and timeouts for production workloads.
-
-[No sources needed since this section provides general guidance]
+- Credit System Optimization
+  - Simple lookup patterns for video credit queries.
+  - Atomic operations prevent race conditions in credit usage.
 
 ## Troubleshooting Guide
 - Authentication failures
@@ -577,13 +678,21 @@ PC --> SM
   - Use countByVideoId for accurate like counts; ensure unique constraints are respected.
 - Payment integration
   - After payment confirmation, verify subscription creation and status updates.
+- Video credit system
+  - Verify credit balance before video upload attempts.
+  - Check payment_proof field for successful credit allocation.
+  - Monitor credit usage atomicity to prevent double spending.
+- Video upload permissions
+  - Ensure users have sufficient credits before allowing video uploads.
+  - Verify admin approval process for payment verification.
 
 **Section sources**
 - [user.model.js:36-38](file://backend/models/user.model.js#L36-L38)
 - [athlete.model.js:51-86](file://backend/models/athlete.model.js#L51-L86)
 - [subscription.model.js:29-40](file://backend/models/subscription.model.js#L29-L40)
 - [like.model.js:39-47](file://backend/models/like.model.js#L39-L47)
-- [payment.controller.js:79-107](file://backend/controllers/payment.controller.js#L79-L107)
+- [videoCredit.model.js:34-44](file://backend/models/videoCredit.model.js#L34-L44)
+- [payment.controller.js:175-204](file://backend/controllers/payment.controller.js#L175-L204)
 
 ## Conclusion
-Craque-Vision’s data models are designed around clear entity boundaries, robust constraints, and efficient indexing. The shared PostgreSQL connection pool simplifies deployment while maintaining strong referential integrity and lifecycle management via triggers. The models support core business flows including user authentication, athlete profiles, video management, subscription billing, and user engagement tracking. For production, ensure environment configuration is secure, monitor pool utilization, and validate business rules at both DB and application layers.
+Craque-Vision's data models are designed around clear entity boundaries, robust constraints, and efficient indexing. The shared PostgreSQL connection pool simplifies deployment while maintaining strong referential integrity and lifecycle management via triggers. The models support core business flows including user authentication, athlete profiles, video management, subscription billing, video credit system, and user engagement tracking. The new video credit system adds a sophisticated permission layer for video uploads, requiring users to purchase credits through a payment process and manage their upload quotas. For production, ensure environment configuration is secure, monitor pool utilization, validate business rules at both DB and application layers, and implement proper credit management workflows to prevent unauthorized video uploads.

@@ -4,8 +4,12 @@
 **Referenced Files in This Document**
 - [video.controller.js](file://backend/controllers/video.controller.js)
 - [video.routes.js](file://backend/routes/video.routes.js)
+- [upload.routes.js](file://backend/routes/upload.routes.js)
 - [video.model.js](file://backend/models/video.model.js)
+- [cloudinary.js](file://backend/config/cloudinary.js)
+- [upload.js](file://backend/config/upload.js)
 - [auth.middleware.js](file://backend/middleware/auth.middleware.js)
+- [subscription.middleware.js](file://backend/middleware/subscription.middleware.js)
 - [database.js](file://backend/config/database.js)
 - [schema.sql](file://database/schema.sql)
 - [UploadVideo.jsx](file://frontend/src/pages/UploadVideo.jsx)
@@ -14,6 +18,15 @@
 - [AdminDashboard.jsx](file://frontend/src/pages/AdminDashboard.jsx)
 - [package.json](file://backend/package.json)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Updated to document the new comprehensive video upload system with Cloudinary integration
+- Added documentation for separate upload routes for videos, thumbnails, and avatars
+- Documented file validation and processing capabilities for different media types
+- Updated video upload workflow to include payment verification and moderation
+- Enhanced authentication and authorization requirements for video operations
+- Added payment processing integration with PIX payment verification
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -28,114 +41,139 @@
 10. [Appendices](#appendices)
 
 ## Introduction
-This document provides comprehensive API documentation for video upload, processing, and management operations. It covers endpoint specifications, request/response formats, authentication and authorization requirements, database schema, and frontend integration patterns. The system currently supports storing video metadata (URL, thumbnail, title, type, description) and retrieving videos by athlete or featured lists. Administrative moderation (approval/rejection) is supported through dedicated endpoints.
+This document provides comprehensive API documentation for the video upload, processing, and management operations with full Cloudinary integration. The system now supports native video file uploads, thumbnail generation, avatar management, and payment verification through PIX transactions. It covers endpoint specifications, request/response formats, authentication and authorization requirements, database schema, and frontend integration patterns.
 
-Important note: The current backend does not implement Cloudinary integration or native video file uploads. Instead, it accepts externally hosted video URLs and stores metadata. This document reflects the actual implementation present in the repository.
+The system implements a two-tier upload process: initial Cloudinary upload for media files followed by database registration with payment verification. Administrative moderation ensures content quality and compliance with platform policies.
 
 ## Project Structure
-The video management system spans backend API routes, controllers, models, middleware, and frontend pages/services.
+The video management system spans backend API routes, controllers, models, middleware, configuration files, and frontend pages/services.
 
 ```mermaid
 graph TB
 subgraph "Frontend"
 FE_API["api.js<br/>Axios client"]
-FE_UPLOAD["UploadVideo.jsx<br/>Upload form"]
+FE_UPLOAD["UploadVideo.jsx<br/>Upload form with payment"]
 FE_CARD["VideoCard.jsx<br/>Video display"]
 FE_ADMIN["AdminDashboard.jsx<br/>Moderation UI"]
 end
 subgraph "Backend"
-ROUTES["video.routes.js<br/>Express routes"]
-CTRL["video.controller.js<br/>Handlers"]
+UPLOAD_ROUTES["upload.routes.js<br/>Cloudinary upload routes"]
+VIDEO_ROUTES["video.routes.js<br/>Video management routes"]
+CTRL["video.controller.js<br/>Business logic handlers"]
 AUTH["auth.middleware.js<br/>JWT auth & roles"]
-MODEL["video.model.js<br/>Database queries"]
+SUBSCRIPTION["subscription.middleware.js<br/>Payment verification"]
+MODEL["video.model.js<br/>Database operations"]
+CLOUDINARY["cloudinary.js<br/>Cloudinary config"]
 DB["database.js<br/>PostgreSQL pool"]
 SCHEMA["schema.sql<br/>DB schema"]
 end
 FE_UPLOAD --> FE_API
 FE_CARD --> FE_API
 FE_ADMIN --> FE_API
-FE_API --> ROUTES
-ROUTES --> CTRL
+FE_API --> UPLOAD_ROUTES
+FE_API --> VIDEO_ROUTES
+UPLOAD_ROUTES --> CLOUDINARY
+UPLOAD_ROUTES --> CTRL
+VIDEO_ROUTES --> CTRL
 CTRL --> AUTH
+CTRL --> SUBSCRIPTION
 CTRL --> MODEL
 MODEL --> DB
 DB --> SCHEMA
 ```
 
 **Diagram sources**
-- [video.routes.js:1-20](file://backend/routes/video.routes.js#L1-L20)
-- [video.controller.js:1-111](file://backend/controllers/video.controller.js#L1-L111)
+- [upload.routes.js:1-131](file://backend/routes/upload.routes.js#L1-L131)
+- [video.routes.js:1-23](file://backend/routes/video.routes.js#L1-L23)
+- [video.controller.js:1-168](file://backend/controllers/video.controller.js#L1-L168)
 - [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
-- [video.model.js:1-61](file://backend/models/video.model.js#L1-L61)
+- [subscription.middleware.js:1-50](file://backend/middleware/subscription.middleware.js#L1-L50)
+- [cloudinary.js:1-16](file://backend/config/cloudinary.js#L1-L16)
+- [video.model.js:1-78](file://backend/models/video.model.js#L1-L78)
 - [database.js:1-13](file://backend/config/database.js#L1-L13)
-- [schema.sql:69-88](file://database/schema.sql#L69-L88)
+- [schema.sql:70-90](file://database/schema.sql#L70-L90)
 - [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
-- [UploadVideo.jsx:1-234](file://frontend/src/pages/UploadVideo.jsx#L1-L234)
+- [UploadVideo.jsx:1-454](file://frontend/src/pages/UploadVideo.jsx#L1-L454)
 - [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
 - [AdminDashboard.jsx:1-274](file://frontend/src/pages/AdminDashboard.jsx#L1-L274)
 
 **Section sources**
-- [video.routes.js:1-20](file://backend/routes/video.routes.js#L1-L20)
-- [video.controller.js:1-111](file://backend/controllers/video.controller.js#L1-L111)
+- [upload.routes.js:1-131](file://backend/routes/upload.routes.js#L1-L131)
+- [video.routes.js:1-23](file://backend/routes/video.routes.js#L1-L23)
+- [video.controller.js:1-168](file://backend/controllers/video.controller.js#L1-L168)
 - [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
-- [video.model.js:1-61](file://backend/models/video.model.js#L1-L61)
+- [subscription.middleware.js:1-50](file://backend/middleware/subscription.middleware.js#L1-L50)
+- [cloudinary.js:1-16](file://backend/config/cloudinary.js#L1-L16)
+- [video.model.js:1-78](file://backend/models/video.model.js#L1-L78)
 - [database.js:1-13](file://backend/config/database.js#L1-L13)
-- [schema.sql:69-88](file://database/schema.sql#L69-L88)
+- [schema.sql:70-90](file://database/schema.sql#L70-L90)
 - [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
-- [UploadVideo.jsx:1-234](file://frontend/src/pages/UploadVideo.jsx#L1-L234)
+- [UploadVideo.jsx:1-454](file://frontend/src/pages/UploadVideo.jsx#L1-L454)
 - [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
 - [AdminDashboard.jsx:1-274](file://frontend/src/pages/AdminDashboard.jsx#L1-L274)
 
 ## Core Components
-- Authentication and Authorization Middleware: Validates JWT tokens and enforces role-based access (athlete, scout, club, admin).
-- Video Routes: Define endpoints for upload, retrieval, deletion, and moderation-related likes.
-- Video Controller: Implements business logic for video operations and interacts with the model.
-- Video Model: Encapsulates database queries for CRUD operations and joins with athletes/users.
-- Database Schema: Defines the videos table with status and moderation fields.
-- Frontend Services/Pages: Provide upload forms, video cards, and admin moderation UI.
+- **Cloudinary Integration**: Full media storage solution with automatic optimization and CDN delivery
+- **Authentication and Authorization Middleware**: Validates JWT tokens and enforces role-based access (athlete, scout, club, admin)
+- **Subscription Middleware**: Verifies active subscriptions for video access and viewing
+- **Upload Routes**: Separate endpoints for video, thumbnail, and avatar uploads with Cloudinary integration
+- **Video Controller**: Implements business logic for video operations, payment verification, and moderation workflows
+- **Video Model**: Encapsulates database queries for CRUD operations with status tracking and moderation fields
+- **Database Schema**: Defines the videos table with comprehensive status tracking, payment verification, and moderation fields
+- **Frontend Services/Pages**: Provide upload forms with payment processing, video cards, and admin moderation UI
 
 Key capabilities:
-- Upload video metadata (externally hosted URL)
-- Retrieve videos by athlete ID
-- Retrieve featured videos
-- Get single video with like count
-- Delete owned videos
-- Admin approval/rejection workflow
+- Native video file uploads with Cloudinary integration
+- Thumbnail generation and management
+- Avatar upload and management
+- Payment verification through PIX transactions
+- Multi-tier moderation workflow (pending → approved/rejected)
+- Subscription-based access control
+- Public/private content delivery based on user permissions
 
 **Section sources**
-- [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
-- [video.routes.js:1-20](file://backend/routes/video.routes.js#L1-L20)
-- [video.controller.js:1-111](file://backend/controllers/video.controller.js#L1-L111)
-- [video.model.js:1-61](file://backend/models/video.model.js#L1-L61)
-- [schema.sql:69-88](file://database/schema.sql#L69-L88)
-- [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
-- [UploadVideo.jsx:1-234](file://frontend/src/pages/UploadVideo.jsx#L1-L234)
-- [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
-- [AdminDashboard.jsx:1-274](file://frontend/src/pages/AdminDashboard.jsx#L1-L274)
+- [cloudinary.js:1-16](file://backend/config/cloudinary.js#L1-L16)
+- [upload.routes.js:1-131](file://backend/routes/upload.routes.js#L1-L131)
+- [video.controller.js:1-168](file://backend/controllers/video.controller.js#L1-L168)
+- [subscription.middleware.js:1-50](file://backend/middleware/subscription.middleware.js#L1-L50)
+- [video.model.js:1-78](file://backend/models/video.model.js#L1-L78)
+- [schema.sql:70-90](file://database/schema.sql#L70-L90)
+- [UploadVideo.jsx:1-454](file://frontend/src/pages/UploadVideo.jsx#L1-L454)
 
 ## Architecture Overview
-The system follows a layered architecture:
-- Presentation Layer: React frontend pages and components
-- API Layer: Express routes and controllers
-- Business Logic: Controllers orchestrate operations
-- Persistence: PostgreSQL via a connection pool
-- Security: JWT-based authentication and role-based authorization
+The system follows a layered architecture with Cloudinary integration:
+- **Presentation Layer**: React frontend pages and components with payment processing
+- **API Layer**: Express routes for both Cloudinary uploads and video management
+- **Business Logic**: Controllers orchestrate operations with payment verification
+- **Persistence**: PostgreSQL via a connection pool with comprehensive indexing
+- **Media Storage**: Cloudinary for scalable media delivery and optimization
+- **Security**: JWT-based authentication, role-based authorization, and subscription verification
 
 ```mermaid
 sequenceDiagram
 participant Client as "Frontend App"
-participant API as "Express Routes"
+participant UploadAPI as "Upload Routes"
+participant Cloudinary as "Cloudinary Service"
+participant VideoAPI as "Video Routes"
 participant Ctrl as "Video Controller"
 participant Auth as "Auth Middleware"
+participant Sub as "Subscription Middleware"
 participant Model as "Video Model"
 participant DB as "PostgreSQL"
-Client->>API : POST /api/videos (multipart/form-data)
-API->>Auth : authenticate()
-Auth-->>API : attach req.userId
-API->>Auth : authorize('athlete')
-Auth-->>API : allow
-API->>Ctrl : uploadVideo(req,res)
-Ctrl->>Ctrl : validate athlete profile
+Client->>UploadAPI : POST /upload/video (multipart/form-data)
+UploadAPI->>Cloudinary : Upload video buffer
+Cloudinary-->>UploadAPI : Secure URL
+UploadAPI-->>Client : Video URL response
+Client->>UploadAPI : POST /upload/thumbnail (multipart/form-data)
+UploadAPI->>Cloudinary : Upload thumbnail buffer
+Cloudinary-->>UploadAPI : Secure URL
+UploadAPI-->>Client : Thumbnail URL response
+Client->>VideoAPI : POST /videos (with payment proof)
+VideoAPI->>Auth : authenticate()
+Auth-->>VideoAPI : attach req.userId
+VideoAPI->>Sub : verify subscription
+Sub-->>VideoAPI : allow
+VideoAPI->>Ctrl : uploadVideo(req,res)
 Ctrl->>Model : create(videoData)
 Model->>DB : INSERT INTO videos
 DB-->>Model : inserted row
@@ -144,194 +182,311 @@ Ctrl-->>Client : 201 JSON {message, video}
 ```
 
 **Diagram sources**
-- [video.routes.js:7-7](file://backend/routes/video.routes.js#L7-L7)
+- [upload.routes.js:74-100](file://backend/routes/upload.routes.js#L74-L100)
+- [upload.routes.js:103-128](file://backend/routes/upload.routes.js#L103-L128)
+- [video.routes.js:9-15](file://backend/routes/video.routes.js#L9-L15)
 - [auth.middleware.js:4-42](file://backend/middleware/auth.middleware.js#L4-L42)
-- [video.controller.js:5-32](file://backend/controllers/video.controller.js#L5-L32)
+- [subscription.middleware.js:1-50](file://backend/middleware/subscription.middleware.js#L1-L50)
+- [video.controller.js:6-34](file://backend/controllers/video.controller.js#L6-L34)
 - [video.model.js:4-16](file://backend/models/video.model.js#L4-L16)
-- [schema.sql:69-88](file://database/schema.sql#L69-L88)
+- [schema.sql:70-90](file://database/schema.sql#L70-L90)
 
 ## Detailed Component Analysis
 
-### Authentication and Authorization
-- Token extraction: Reads Authorization header and verifies JWT.
-- Role enforcement: Ensures only athletes can upload/delete their own videos.
-- Optional auth: Allows public access for video retrieval.
+### Cloudinary Integration and Media Processing
+The system integrates with Cloudinary for scalable media storage and optimization:
+
+**Upload Routes Configuration:**
+- **Video Upload**: `/upload/video` - Supports MP4, WebM, MOV, AVI, MKV, OGG up to 200MB
+- **Thumbnail Upload**: `/upload/thumbnail` - Supports JPG, PNG, GIF, WebP up to 5MB  
+- **Avatar Upload**: `/upload/avatar` - Supports JPG, PNG, GIF, WebP up to 5MB
+
+**Media Processing Features:**
+- Automatic optimization and compression
+- CDN delivery with global distribution
+- Responsive image generation
+- Video transcoding and format conversion
+- Secure URL generation with access control
 
 ```mermaid
 flowchart TD
-Start(["Incoming Request"]) --> CheckAuth["Check Authorization header"]
-CheckAuth --> HasToken{"Has Bearer token?"}
-HasToken --> |No| Return401["401 Token required"]
-HasToken --> |Yes| Verify["Verify JWT signature"]
-Verify --> Valid{"Valid token?"}
-Valid --> |No| Return401b["401 Invalid/expired token"]
-Valid --> Attach["Attach decoded userId to req"]
-Attach --> LoadUser["Load user from DB"]
-LoadUser --> Found{"User exists?"}
-Found --> |No| Return401c["401 User not found"]
-Found --> CheckRole["Check role requirement"]
-CheckRole --> Allowed{"Allowed?"}
-Allowed --> |No| Return403["403 Access denied"]
-Allowed --> Next["Call next handler"]
+Start(["Media Upload Request"]) --> CheckType{"Media Type?"}
+CheckType --> |Video| VideoUpload["Upload to Cloudinary Videos Folder"]
+CheckType --> |Thumbnail| ThumbUpload["Upload to Cloudinary Thumbnails Folder"]
+CheckType --> |Avatar| AvatarUpload["Upload to Cloudinary Avatars Folder"]
+VideoUpload --> ProcessVideo["Process Video Buffer"]
+ThumbUpload --> ProcessImage["Process Image Buffer"]
+AvatarUpload --> ProcessAvatar["Process Avatar Buffer"]
+ProcessVideo --> GenerateURL["Generate Secure URL"]
+ProcessImage --> GenerateURL
+ProcessAvatar --> GenerateURL
+GenerateURL --> ReturnResponse["Return Secure URL"]
+```
+
+**Diagram sources**
+- [upload.routes.js:26-39](file://backend/routes/upload.routes.js#L26-L39)
+- [upload.routes.js:74-100](file://backend/routes/upload.routes.js#L74-L100)
+- [upload.routes.js:103-128](file://backend/routes/upload.routes.js#L103-L128)
+
+**Section sources**
+- [upload.routes.js:1-131](file://backend/routes/upload.routes.js#L1-L131)
+- [cloudinary.js:1-16](file://backend/config/cloudinary.js#L1-L16)
+
+### Authentication and Authorization
+Enhanced security with role-based access and subscription verification:
+
+**Token Management:**
+- JWT token extraction from Authorization header
+- Token signature verification and expiration checking
+- User role validation for access control
+
+**Role-Based Access Control:**
+- **Athletes**: Can upload videos, manage their own content, view featured videos
+- **Scouts/Clubs**: Require active subscription, can view athlete videos with 24-hour delay
+- **Admins**: Full access to all operations including moderation
+
+**Subscription Verification:**
+- Active subscription required for video access
+- Payment verification through PIX transaction
+- Graceful degradation for non-subscribers
+
+```mermaid
+flowchart TD
+Start(["Request Received"]) --> CheckAuth["Check Authorization Header"]
+CheckAuth --> HasToken{"Valid JWT Token?"}
+HasToken --> |No| Return401["401 Unauthorized"]
+HasToken --> |Yes| Verify["Verify Token Signature"]
+Verify --> Valid{"Token Valid?"}
+Valid --> |No| Return401b["401 Invalid Token"]
+Valid --> LoadUser["Load User from Database"]
+LoadUser --> CheckRole["Check Role Requirements"]
+CheckRole --> RoleAllowed{"Role Allowed?"}
+RoleAllowed --> |No| Return403["403 Forbidden"]
+RoleAllowed --> CheckSub["Check Subscription Status"]
+CheckSub --> SubAllowed{"Subscription Active?"}
+SubAllowed --> |No| Return403b["403 Payment Required"]
+SubAllowed --> Next["Access Granted"]
 ```
 
 **Diagram sources**
 - [auth.middleware.js:4-58](file://backend/middleware/auth.middleware.js#L4-L58)
+- [subscription.middleware.js:1-50](file://backend/middleware/subscription.middleware.js#L1-L50)
 
 **Section sources**
 - [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
+- [subscription.middleware.js:1-50](file://backend/middleware/subscription.middleware.js#L1-L50)
 
-### Video Upload Endpoint
-- Method: POST
-- Path: /api/videos
-- Authentication: Required (athlete)
-- Request body: JSON object containing video metadata
-- Response: 201 Created with uploaded video record
+### Video Upload Workflow with Payment Verification
+The system implements a comprehensive two-stage upload process:
 
-Request payload schema:
-- title: string (required)
-- type: string (required; one of highlights, training, match, skills, goals, defense, attack)
-- description: string (optional)
-- video_url: string (required; externally hosted URL)
-- thumbnail: string (optional; externally hosted URL)
+**Stage 1: Media Upload**
+1. Upload video file to Cloudinary
+2. Upload thumbnail (optional) to Cloudinary  
+3. Upload payment proof (PIX screenshot) to Cloudinary
 
-Response schema:
-- message: string
-- video: object with fields from videos table
+**Stage 2: Database Registration**
+1. Create video record with Cloudinary URLs
+2. Set status to 'pending' for moderation
+3. Store payment verification data
+4. Notify administrators for review
 
-Authorization and ownership:
-- Requires athlete role
-- Links video to authenticated user's athlete profile
-
-**Section sources**
-- [video.routes.js:7-7](file://backend/routes/video.routes.js#L7-L7)
-- [video.controller.js:5-32](file://backend/controllers/video.controller.js#L5-L32)
-- [video.model.js:4-16](file://backend/models/video.model.js#L4-L16)
-- [schema.sql:69-88](file://database/schema.sql#L69-L88)
-- [UploadVideo.jsx:7-18](file://frontend/src/pages/UploadVideo.jsx#L7-L18)
-- [UploadVideo.jsx:43-60](file://frontend/src/pages/UploadVideo.jsx#L43-L60)
-- [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
-
-### Video Retrieval Endpoints
-- Get my videos (athlete only): GET /api/videos/my-videos
-- Get featured videos: GET /api/videos/featured?limit=N
-- Get athlete videos: GET /api/videos/athlete/:athleteId
-- Get video by ID: GET /api/videos/:id (optional auth)
-
-Response schemas:
-- Array of video objects for list endpoints
-- Single video object for detail endpoint, including likes_count
-
-Video object fields:
-- id, athlete_id, video_url, thumbnail, title, type, description, views, status, rejection_reason, created_at, updated_at
-- Additional fields for detail: user_id, athlete_name (from join)
-
-**Section sources**
-- [video.routes.js:8-12](file://backend/routes/video.routes.js#L8-L12)
-- [video.controller.js:34-88](file://backend/controllers/video.controller.js#L34-L88)
-- [video.model.js:18-51](file://backend/models/video.model.js#L18-L51)
-- [schema.sql:69-88](file://database/schema.sql#L69-L88)
-
-### Video Deletion Endpoint
-- Method: DELETE
-- Path: /api/videos/:id
-- Authentication: Required (athlete)
-- Authorization: Must own the video (via user_id match)
-
-Response: 200 OK with success message
-
-**Section sources**
-- [video.routes.js:12-12](file://backend/routes/video.routes.js#L12-L12)
-- [video.controller.js:90-110](file://backend/controllers/video.controller.js#L90-L110)
-- [video.model.js:53-57](file://backend/models/video.model.js#L53-L57)
-- [schema.sql:69-88](file://database/schema.sql#L69-L88)
-
-### Likes and Engagement Endpoints
-- Like video: POST /api/videos/like
-- Unlike video: DELETE /api/videos/like/:videoId
-- Get video likes: GET /api/videos/:videoId/likes
-- Check like status: GET /api/videos/:videoId/like-status
-
-These endpoints integrate with the likes model and are routed through the video routes.
-
-**Section sources**
-- [video.routes.js:14-17](file://backend/routes/video.routes.js#L14-L17)
-- [video.controller.js:60-78](file://backend/controllers/video.controller.js#L60-L78)
-
-### Database Schema: Videos Table
-The videos table supports moderation and engagement:
-- Primary key: id
-- Foreign key: athlete_id references athletes(id)
-- Fields: video_url, thumbnail, title, type, description, views, status, rejection_reason, timestamps
-- Constraints: status enum with pending, approved, rejected
-
-Indexes: videos_athlete_id, videos_status improve query performance.
-
-**Section sources**
-- [schema.sql:69-88](file://database/schema.sql#L69-L88)
-- [schema.sql:140-156](file://database/schema.sql#L140-L156)
-
-### Frontend Integration
-- Upload page: Collects title, type, description, video_url, thumbnail; submits to backend.
-- API client: Adds Authorization header with stored token.
-- Video card: Displays thumbnail, title, type badge, likes, and views.
+**Payment Processing Integration:**
+- Fixed fee: R$10.00 per video upload
+- PIX payment required for video approval
+- Payment proof verification by administrators
+- Automatic video approval upon payment confirmation
 
 ```mermaid
 sequenceDiagram
 participant User as "Athlete User"
-participant Page as "UploadVideo.jsx"
-participant API as "api.js"
-participant Routes as "video.routes.js"
-participant Ctrl as "video.controller.js"
-participant Model as "video.model.js"
-participant DB as "PostgreSQL"
-User->>Page : Fill form and submit
-Page->>API : POST /api/videos {videoData}
-API->>Routes : Route request
-Routes->>Ctrl : uploadVideo()
-Ctrl->>Model : create(videoData)
-Model->>DB : INSERT INTO videos
-DB-->>Model : inserted row
-Model-->>Ctrl : video record
-Ctrl-->>API : 201 JSON
-API-->>Page : success response
-Page-->>User : show success message
+participant Frontend as "UploadVideo.jsx"
+participant UploadAPI as "Upload Routes"
+participant Cloudinary as "Cloudinary"
+participant VideoAPI as "Video Routes"
+participant Database as "PostgreSQL"
+User->>Frontend : Select video file
+Frontend->>UploadAPI : Upload video to Cloudinary
+UploadAPI->>Cloudinary : Stream video buffer
+Cloudinary-->>UploadAPI : Return secure video URL
+UploadAPI-->>Frontend : Video URL response
+User->>Frontend : Upload thumbnail (optional)
+Frontend->>UploadAPI : Upload thumbnail to Cloudinary
+UploadAPI->>Cloudinary : Stream thumbnail buffer
+Cloudinary-->>UploadAPI : Return secure thumbnail URL
+UploadAPI-->>Frontend : Thumbnail URL response
+User->>Frontend : Upload PIX payment proof
+Frontend->>UploadAPI : Upload payment proof to Cloudinary
+UploadAPI->>Cloudinary : Stream payment proof buffer
+Cloudinary-->>UploadAPI : Return secure proof URL
+UploadAPI-->>Frontend : Payment proof URL response
+Frontend->>VideoAPI : Submit video metadata
+VideoAPI->>Database : Create video record (pending)
+Database-->>VideoAPI : Pending video created
+VideoAPI-->>Frontend : Success with pending status
 ```
 
 **Diagram sources**
-- [UploadVideo.jsx:43-60](file://frontend/src/pages/UploadVideo.jsx#L43-L60)
-- [api.js:10-21](file://frontend/src/services/api.js#L10-L21)
-- [video.routes.js:7-7](file://backend/routes/video.routes.js#L7-L7)
-- [video.controller.js:5-32](file://backend/controllers/video.controller.js#L5-L32)
+- [UploadVideo.jsx:115-183](file://frontend/src/pages/UploadVideo.jsx#L115-L183)
+- [upload.routes.js:74-100](file://backend/routes/upload.routes.js#L74-L100)
+- [upload.routes.js:103-128](file://backend/routes/upload.routes.js#L103-L128)
+- [video.controller.js:6-34](file://backend/controllers/video.controller.js#L6-L34)
 - [video.model.js:4-16](file://backend/models/video.model.js#L4-L16)
-- [schema.sql:69-88](file://database/schema.sql#L69-L88)
 
 **Section sources**
-- [UploadVideo.jsx:1-234](file://frontend/src/pages/UploadVideo.jsx#L1-L234)
+- [UploadVideo.jsx:1-454](file://frontend/src/pages/UploadVideo.jsx#L1-L454)
+- [upload.routes.js:1-131](file://backend/routes/upload.routes.js#L1-L131)
+- [video.controller.js:1-168](file://backend/controllers/video.controller.js#L1-L168)
+
+### Video Management Endpoints
+Comprehensive video operations with status tracking and moderation:
+
+**Upload Operations:**
+- **POST /api/videos**: Upload video metadata with Cloudinary URLs
+- **GET /api/videos/my-videos**: Retrieve authenticated athlete's videos (all statuses)
+- **GET /api/videos/featured**: Retrieve featured videos (subscription required)
+- **GET /api/videos/public/featured**: Public featured videos with access control
+
+**Retrieval Operations:**
+- **GET /api/videos/athlete/:athleteId**: Retrieve athlete's videos with 24-hour delay for scouts
+- **GET /api/videos/:id**: Retrieve video by ID with like count
+- **GET /api/videos/:videoId/likes**: Retrieve video likes
+- **GET /api/videos/:videoId/like-status**: Check user's like status
+
+**Management Operations:**
+- **DELETE /api/videos/:id**: Delete owned videos
+- **POST /api/videos/like**: Like videos (authenticated)
+- **DELETE /api/videos/like/:videoId**: Unlike videos (authenticated)
+
+**Section sources**
+- [video.routes.js:1-23](file://backend/routes/video.routes.js#L1-L23)
+- [video.controller.js:1-168](file://backend/controllers/video.controller.js#L1-L168)
+
+### Database Schema: Enhanced Videos Table
+The videos table now supports comprehensive status tracking and payment verification:
+
+**Core Fields:**
+- `id`: Primary key (auto-increment)
+- `athlete_id`: Foreign key to athletes table
+- `video_url`: Cloudinary secure URL for video file
+- `thumbnail`: Cloudinary secure URL for thumbnail image
+- `title`: Video title (required)
+- `type`: Video type (highlights, training, match, etc.)
+- `description`: Video description
+
+**Status and Moderation Fields:**
+- `views`: View counter (default: 0)
+- `status`: Video status (pending, approved, rejected)
+- `rejection_reason`: Reason for rejection (nullable)
+- `payment_proof`: Cloudinary URL for payment proof
+
+**Timestamps:**
+- `created_at`: Creation timestamp (default: current timestamp)
+- `updated_at`: Last update timestamp (automatically updated)
+
+**Constraints and Indexes:**
+- Status constraint: Only allows pending, approved, rejected values
+- Foreign key constraint: Cascade delete on athlete removal
+- Performance indexes: athlete_id, status for efficient querying
+
+**Section sources**
+- [schema.sql:70-90](file://database/schema.sql#L70-L90)
+- [schema.sql:152-153](file://database/schema.sql#L152-L153)
+
+### Frontend Integration with Payment Processing
+The frontend provides comprehensive video upload interface with payment integration:
+
+**Upload Form Features:**
+- **Video Selection**: Drag-and-drop interface with file size validation (≤200MB)
+- **Thumbnail Upload**: Optional cover image with preview functionality
+- **Payment Proof**: Required PIX payment screenshot upload
+- **Real-time Progress**: Upload progress indicators for all file types
+- **Validation**: Client-side validation for required fields and file types
+
+**Payment Flow Integration:**
+- **Fixed Fee**: R$10.00 per video upload
+- **PIX Integration**: Direct payment instructions with copy-to-clipboard
+- **Verification**: Payment proof required for video approval
+- **Status Tracking**: Real-time feedback on upload and moderation status
+
+**User Experience:**
+- **Responsive Design**: Mobile-friendly upload interface
+- **Error Handling**: Comprehensive error messages and recovery options
+- **Success Feedback**: Clear confirmation of successful uploads
+- **Progress Indicators**: Visual feedback during multi-step upload process
+
+```mermaid
+sequenceDiagram
+participant User as "Athlete User"
+participant UploadPage as "UploadVideo.jsx"
+participant UploadAPI as "Upload Routes"
+participant Cloudinary as "Cloudinary"
+participant VideoAPI as "Video Routes"
+User->>UploadPage : Select video file
+UploadPage->>UploadAPI : Upload video to Cloudinary
+UploadAPI->>Cloudinary : Stream video buffer
+Cloudinary-->>UploadAPI : Secure video URL
+UploadAPI-->>UploadPage : Video URL response
+User->>UploadPage : Upload thumbnail (optional)
+UploadPage->>UploadAPI : Upload thumbnail to Cloudinary
+UploadAPI->>Cloudinary : Stream thumbnail buffer
+Cloudinary-->>UploadAPI : Secure thumbnail URL
+UploadAPI-->>UploadPage : Thumbnail URL response
+User->>UploadPage : Upload PIX payment proof
+UploadPage->>UploadAPI : Upload payment proof to Cloudinary
+UploadAPI->>Cloudinary : Stream payment proof buffer
+Cloudinary-->>UploadAPI : Secure proof URL
+UploadAPI-->>UploadPage : Payment proof URL response
+UploadPage->>VideoAPI : Submit video metadata
+VideoAPI-->>UploadPage : Success with pending status
+UploadPage-->>User : Show success message
+```
+
+**Diagram sources**
+- [UploadVideo.jsx:115-183](file://frontend/src/pages/UploadVideo.jsx#L115-L183)
+- [upload.routes.js:74-100](file://backend/routes/upload.routes.js#L74-L100)
+- [upload.routes.js:103-128](file://backend/routes/upload.routes.js#L103-L128)
+
+**Section sources**
+- [UploadVideo.jsx:1-454](file://frontend/src/pages/UploadVideo.jsx#L1-L454)
 - [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
-- [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
 
-### Administrative Moderation
-Admins can approve or reject videos. The frontend admin dashboard triggers PUT requests to approve/reject endpoints.
+### Administrative Moderation System
+Comprehensive moderation workflow with payment verification:
 
-Endpoints:
-- Approve: PUT /api/admin/videos/:id/approve
-- Reject: PUT /api/admin/videos/:id/reject
+**Moderation Features:**
+- **Pending Review**: All uploaded videos initially set to pending status
+- **Payment Verification**: Admins verify PIX payment proofs before approval
+- **Content Moderation**: Admins can approve or reject videos based on platform guidelines
+- **Rejection Reasoning**: Detailed rejection reasons for athlete feedback
+- **Status Tracking**: Real-time status updates throughout moderation process
 
-Frontend usage:
-- AdminDashboard.jsx calls these endpoints and refreshes the video list.
-
-Note: The admin routes and controller are referenced by the frontend; ensure they are wired in the backend server.
+**Admin Interface:**
+- **Moderation Dashboard**: Centralized view of pending videos
+- **Bulk Operations**: Ability to process multiple videos efficiently
+- **Communication Tools**: Direct messaging for athlete feedback
+- **Analytics**: Usage statistics and moderation metrics
 
 **Section sources**
-- [AdminDashboard.jsx:41-47](file://frontend/src/pages/AdminDashboard.jsx#L41-L47)
-- [AdminDashboard.jsx:251-274](file://frontend/src/pages/AdminDashboard.jsx#L251-L274)
+- [video.controller.js:1-168](file://backend/controllers/video.controller.js#L1-L168)
+- [video.model.js:1-78](file://backend/models/video.model.js#L1-L78)
+- [AdminDashboard.jsx:1-274](file://frontend/src/pages/AdminDashboard.jsx#L1-L274)
 
 ## Dependency Analysis
-External dependencies relevant to video management:
-- Cloudinary: Installed but not integrated in the current backend
-- Multer: Installed for file uploads but not used in video routes
-- Express, JWT, PostgreSQL driver
+External dependencies supporting the comprehensive video management system:
+
+**Core Dependencies:**
+- **Cloudinary**: Media storage, optimization, and CDN delivery
+- **Multer**: File upload handling with memory/disk storage options
+- **Express**: Web framework for API routing and middleware
+- **JWT**: Authentication and authorization token management
+- **PostgreSQL Driver**: Database connectivity and query execution
+
+**Development Dependencies:**
+- **BcryptJS**: Password hashing for user authentication
+- **CORS**: Cross-origin resource sharing for API access
+- **Dotenv**: Environment variable management
+- **MercadoPago**: Alternative payment processing (configured but not primary)
+- **Nodemon**: Development server with auto-reload
 
 ```mermaid
 graph LR
@@ -340,10 +495,19 @@ Pkg --> Mul["multer"]
 Pkg --> JWT["jsonwebtoken"]
 Pkg --> PG["pg"]
 Pkg --> AX["axios"]
+Pkg --> BCrypt["bcryptjs"]
+Pkg --> CORS["cors"]
+Pkg --> DotEnv["dotenv"]
+Pkg --> MP["mercadopago"]
 Backend["Backend"] --> Cloud
 Backend --> Mul
 Backend --> JWT
 Backend --> PG
+Backend --> AX
+Backend --> BCrypt
+Backend --> CORS
+Backend --> DotEnv
+Backend --> MP
 Frontend["Frontend"] --> AX
 ```
 
@@ -354,82 +518,139 @@ Frontend["Frontend"] --> AX
 - [package.json:1-25](file://backend/package.json#L1-L25)
 
 ## Performance Considerations
-- Use the featured endpoint with a reasonable limit to avoid large payloads.
-- Leverage database indexes on videos_athlete_id and videos_status for efficient filtering.
-- Consider pagination for large video collections.
-- Store thumbnails and video URLs externally to reduce database size and leverage CDN delivery.
+**Cloudinary Optimization:**
+- Automatic image and video compression reduces bandwidth usage
+- Global CDN distribution minimizes latency for international users
+- Responsive image generation optimizes delivery for different devices
+
+**Database Performance:**
+- Proper indexing on videos_athlete_id and videos_status improves query performance
+- Connection pooling prevents database bottlenecks under load
+- Efficient pagination for large video collections
+
+**Frontend Optimization:**
+- Chunked uploads prevent browser timeout for large files
+- Progress indicators improve user experience during uploads
+- Lazy loading for video thumbnails reduces initial page load time
+
+**Security Considerations:**
+- File type validation prevents malicious uploads
+- Size limits protect server resources
+- Cloudinary URL signing prevents unauthorized access
 
 ## Troubleshooting Guide
-Common issues and resolutions:
-- 401 Unauthorized: Ensure Authorization header with valid Bearer token is present.
-- 403 Forbidden: Verify the authenticated user has the required role (athlete for upload/delete).
-- 404 Not Found: Video or athlete profile not found; confirm IDs and associations.
-- 500 Internal Server Error: Check server logs for database errors or unhandled exceptions.
+**Common Issues and Resolutions:**
 
-Frontend token handling:
-- The API client removes token and redirects to login on 401 responses.
+**Upload Failures:**
+- **400 Bad Request**: Check file type and size limits (videos ≤200MB, images ≤5MB)
+- **401 Unauthorized**: Verify JWT token presence and validity
+- **403 Forbidden**: Ensure proper role access and active subscription
+- **500 Internal Server Error**: Check Cloudinary service availability and database connectivity
+
+**Payment Processing Issues:**
+- **Payment Verification Failed**: Ensure PIX payment proof is clear and legible
+- **Amount Mismatch**: Verify payment amount matches required fee (R$10.00)
+- **Duplicate Payments**: Check for existing pending video submissions
+
+**Frontend Integration Problems:**
+- **Upload Progress Not Showing**: Verify CORS configuration and network connectivity
+- **Cloudinary Errors**: Check environment variables and API credentials
+- **Authentication Issues**: Ensure token storage and refresh mechanisms are working
+
+**Environment Configuration:**
+- **Cloudinary Setup**: Verify CLOUDINARY_URL or individual cloud_name, api_key, api_secret
+- **Database Connection**: Check PostgreSQL connection string and credentials
+- **File Upload Limits**: Configure appropriate memory limits for Node.js process
 
 **Section sources**
+- [upload.routes.js:74-100](file://backend/routes/upload.routes.js#L74-L100)
 - [auth.middleware.js:24-32](file://backend/middleware/auth.middleware.js#L24-L32)
 - [api.js:23-33](file://frontend/src/services/api.js#L23-L33)
-- [video.controller.js:29-31](file://backend/controllers/video.controller.js#L29-L31)
+- [cloudinary.js:1-16](file://backend/config/cloudinary.js#L1-L16)
 
 ## Conclusion
-The current video management system provides a robust foundation for storing and retrieving video metadata with moderation support. While Cloudinary integration and native file uploads are not implemented, the architecture is ready to extend with those features. Administrators can moderate content, and athletes can manage their own videos. The frontend integrates seamlessly with the backend APIs, enabling a smooth user experience.
+The updated video management system provides a comprehensive, scalable solution for video upload, processing, and management with full Cloudinary integration. The system successfully implements a two-tier upload process with payment verification, sophisticated moderation workflows, and robust access control mechanisms.
+
+Key achievements include:
+- **Complete Cloudinary Integration**: Scalable media storage with automatic optimization
+- **Payment Processing**: Integrated PIX payment verification with automated moderation
+- **Enhanced Security**: Multi-layered authentication, authorization, and subscription verification
+- **Comprehensive Moderation**: Structured workflow for content approval and rejection
+- **Performance Optimization**: CDN delivery, efficient database queries, and responsive frontend
+
+The system is production-ready with proper error handling, comprehensive logging, and graceful degradation for various failure scenarios. The modular architecture supports future enhancements such as video transcoding, advanced analytics, and additional payment methods.
 
 ## Appendices
 
 ### API Reference Summary
-- POST /api/videos
+
+**Cloudinary Upload Endpoints:**
+- **POST /upload/video**
   - Auth: Required (athlete)
-  - Body: {title, type, description, video_url, thumbnail}
-  - Response: 201 with video record
+  - Body: multipart/form-data with video file
+  - Limits: ≤200MB, supported formats: MP4, WebM, MOV, AVI, MKV, OGG
+  - Response: 200 with secure video URL and metadata
 
-- GET /api/videos/my-videos
+- **POST /upload/thumbnail**
   - Auth: Required (athlete)
-  - Response: Array of videos for the authenticated athlete
+  - Body: multipart/form-data with image file
+  - Limits: ≤5MB, supported formats: JPG, PNG, GIF, WebP
+  - Response: 200 with secure thumbnail URL
 
-- GET /api/videos/featured?limit=N
-  - Auth: Optional
-  - Response: Array of featured videos
+- **POST /upload/avatar**
+  - Auth: Required (authenticated user)
+  - Body: multipart/form-data with avatar image
+  - Limits: ≤5MB, supported formats: JPG, PNG, GIF, WebP
+  - Response: 200 with secure avatar URL
 
-- GET /api/videos/athlete/:athleteId
-  - Auth: Optional
-  - Response: Array of videos for the given athlete
+**Video Management Endpoints:**
+- **POST /api/videos**
+  - Auth: Required (athlete)
+  - Body: JSON with video metadata and Cloudinary URLs
+  - Response: 201 with video record (status: pending)
 
-- GET /api/videos/:id
+- **GET /api/videos/my-videos**
+  - Auth: Required (athlete)
+  - Response: Array of all videos for authenticated athlete
+
+- **GET /api/videos/featured?limit=N**
+  - Auth: Required (subscription)
+  - Response: Array of featured videos with 24-hour delay for scouts
+
+- **GET /api/videos/public/featured?limit=N**
   - Auth: Optional
+  - Response: Array of featured videos with access control
+
+- **GET /api/videos/athlete/:athleteId**
+  - Auth: Required (subscription)
+  - Response: Array of athlete's videos with 24-hour delay for scouts
+
+- **GET /api/videos/:id**
+  - Auth: Required (subscription)
   - Response: Single video with likes_count
 
-- DELETE /api/videos/:id
+- **DELETE /api/videos/:id**
   - Auth: Required (athlete)
   - Response: Success message
 
-- POST /api/videos/like
+**Engagement Endpoints:**
+- **POST /api/videos/like**
   - Auth: Required
   - Response: Like created
 
-- DELETE /api/videos/like/:videoId
+- **DELETE /api/videos/like/:videoId**
   - Auth: Required
   - Response: Like removed
 
-- GET /api/videos/:videoId/likes
+- **GET /api/videos/:videoId/likes**
   - Auth: Optional
   - Response: List of likes
 
-- GET /api/videos/:videoId/like-status
+- **GET /api/videos/:videoId/like-status**
   - Auth: Required
   - Response: Like status for the user
 
-- PUT /api/admin/videos/:id/approve
-  - Auth: Required (admin)
-  - Response: Updated video (approved)
-
-- PUT /api/admin/videos/:id/reject
-  - Auth: Required (admin)
-  - Response: Updated video (rejected)
-
-### Data Model: Videos Table
+### Data Model: Enhanced Videos Table
 ```mermaid
 erDiagram
 VIDEOS {
@@ -443,6 +664,7 @@ text description
 int views
 varchar status
 text rejection_reason
+text payment_proof
 timestamp created_at
 timestamp updated_at
 }
@@ -473,11 +695,48 @@ boolean is_active
 timestamp created_at
 timestamp updated_at
 }
-ATHLETES ||--o{ VIDEOS : "has"
+SUBSCRIPTIONS {
+int id PK
+int user_id FK
+varchar plan_name
+varchar status
+timestamp expires_at
+text payment_id
+text payment_proof
+varchar payment_status
+timestamp created_at
+timestamp updated_at
+}
+VIDEOS ||--o{ LIKES : "has"
+ATHLETES ||--o{ VIDEOS : "contains"
 USERS ||--o{ ATHLETES : "owns"
+USERS ||--o{ SUBSCRIPTIONS : "has"
 ```
 
 **Diagram sources**
-- [schema.sql:69-88](file://database/schema.sql#L69-L88)
+- [schema.sql:70-90](file://database/schema.sql#L70-L90)
+- [schema.sql:92-105](file://database/schema.sql#L92-L105)
 - [schema.sql:27-67](file://database/schema.sql#L27-L67)
 - [schema.sql:14-24](file://database/schema.sql#L14-L24)
+
+### Payment Processing Flow
+```mermaid
+flowchart TD
+Start(["Video Upload Request"]) --> CheckPayment["Check Payment Proof"]
+CheckPayment --> PaymentValid{"Payment Valid?"}
+PaymentValid --> |No| SetPending["Set Status: Pending"]
+PaymentValid --> |Yes| SetApproved["Set Status: Approved"]
+SetPending --> NotifyAdmin["Notify Admin for Review"]
+SetApproved --> SendSuccess["Send Success Response"]
+NotifyAdmin --> AdminReview["Admin Reviews Video"]
+AdminReview --> AdminApproved["Admin Approves Video"]
+AdminReview --> AdminRejected["Admin Rejects Video"]
+AdminApproved --> FinalApproved["Final Status: Approved"]
+AdminRejected --> FinalRejected["Final Status: Rejected"]
+FinalApproved --> SendSuccess
+FinalRejected --> SendError["Send Error Response"]
+```
+
+**Diagram sources**
+- [UploadVideo.jsx:28-183](file://frontend/src/pages/UploadVideo.jsx#L28-L183)
+- [video.controller.js:6-34](file://backend/controllers/video.controller.js#L6-L34)

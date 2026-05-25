@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   User, Mail, Lock, Eye, EyeOff, Trophy, AlertCircle,
@@ -7,13 +7,14 @@ import {
 } from 'lucide-react';
 
 const Register = () => {
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    user_type: 'athlete'
+    user_type: searchParams.get('tipo') || 'athlete'
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
