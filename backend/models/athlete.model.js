@@ -58,30 +58,42 @@ class Athlete {
       SELECT a.*, u.name, u.avatar
       FROM athletes a 
       JOIN users u ON a.user_id = u.id 
-      WHERE 1=1
+      WHERE u.is_active = true
     `;
     const values = [];
     let paramCount = 0;
 
+    // Busca unificada: nome, posição, esporte, cidade
+    if (filters.q) {
+      paramCount++;
+      query += ` AND (
+        u.name ILIKE $${paramCount} OR 
+        a.position ILIKE $${paramCount} OR 
+        a.sport ILIKE $${paramCount} OR
+        a.city ILIKE $${paramCount} OR
+        a.current_club ILIKE $${paramCount}
+      )`;
+      values.push(`%${filters.q}%`);
+    }
     if (filters.sport) {
       paramCount++;
-      query += ` AND a.sport = $${paramCount}`;
-      values.push(filters.sport);
+      query += ` AND a.sport ILIKE $${paramCount}`;
+      values.push(`%${filters.sport}%`);
     }
     if (filters.category) {
       paramCount++;
-      query += ` AND a.category = $${paramCount}`;
-      values.push(filters.category);
+      query += ` AND a.category ILIKE $${paramCount}`;
+      values.push(`%${filters.category}%`);
     }
     if (filters.state) {
       paramCount++;
-      query += ` AND a.state = $${paramCount}`;
-      values.push(filters.state);
+      query += ` AND a.state ILIKE $${paramCount}`;
+      values.push(`%${filters.state}%`);
     }
     if (filters.position) {
       paramCount++;
-      query += ` AND a.position = $${paramCount}`;
-      values.push(filters.position);
+      query += ` AND a.position ILIKE $${paramCount}`;
+      values.push(`%${filters.position}%`);
     }
 
     query += ' ORDER BY a.created_at DESC';

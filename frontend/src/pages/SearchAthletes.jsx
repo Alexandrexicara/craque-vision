@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, MapPin, X } from 'lucide-react';
 import AthleteCard from '../components/AthleteCard';
 import api from '../services/api';
@@ -26,14 +26,11 @@ const SearchAthletes = () => {
   };
   const [customPosition, setCustomPosition] = useState('');
 
-  useEffect(() => {
-    fetchAthletes();
-  }, [filters]);
-
-  const fetchAthletes = async () => {
+  const fetchAthletes = useCallback(async () => {
     try {
       setLoading(true);
       const queryParams = new URLSearchParams();
+      if (searchQuery) queryParams.append('q', searchQuery);
       Object.entries(filters).forEach(([key, value]) => {
         if (value) queryParams.append(key, value);
       });
@@ -45,7 +42,14 @@ const SearchAthletes = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchQuery, filters]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchAthletes();
+    }, 300); // debounce: espera 300ms após última digitação
+    return () => clearTimeout(timer);
+  }, [fetchAthletes]);
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -217,12 +221,7 @@ const SearchAthletes = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {athletes
-              .filter(athlete => 
-                searchQuery === '' || 
-                athlete.name?.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map((athlete) => (
+            {athletes.map((athlete) => (
                 <AthleteCard key={athlete.id} athlete={athlete} />
               ))}
           </div>
