@@ -13,6 +13,7 @@
 - [SearchAthletes.jsx](file://frontend/src/pages/SearchAthletes.jsx)
 - [ClubPlans.jsx](file://frontend/src/pages/ClubPlans.jsx)
 - [SubscriptionPayment.jsx](file://frontend/src/pages/SubscriptionPayment.jsx)
+- [Contact.jsx](file://frontend/src/pages/Contact.jsx)
 - [Navbar.jsx](file://frontend/src/components/Navbar.jsx)
 - [Footer.jsx](file://frontend/src/components/Footer.jsx)
 - [AthleteCard.jsx](file://frontend/src/components/AthleteCard.jsx)
@@ -26,6 +27,7 @@
 
 ## Update Summary
 **Changes Made**
+- Added comprehensive documentation for the new Contact page component
 - Enhanced Register page with URL parameter-based user type selection (tipo parameter)
 - Improved ClubPlans page with user type validation preventing inappropriate plan subscriptions
 - Refined SearchAthletes component with performance optimizations including useCallback hooks and debouncing mechanism
@@ -43,9 +45,9 @@
 9. [Conclusion](#conclusion)
 
 ## Introduction
-This document provides comprehensive documentation for all Craque-Vision page components. It explains the Home page layout and featured content display, the Login and Register pages with form validation and error handling, the AthleteDashboard for athlete profile management, video uploads, and personal analytics, the ScoutDashboard for searching athletes, managing favorites, and accessing premium features, the AdminDashboard for platform administration and user management, the AthleteProfile page for public profile viewing, the UploadVideo page with file selection, preview, and submission workflows, the SearchAthletes page with filtering, sorting, and result presentation, the ClubPlans page for subscription management and payment processing, and the new SubscriptionPayment page component with subscription selection, PIX payment processing, and status tracking.
+This document provides comprehensive documentation for all Craque-Vision page components. It explains the Home page layout and featured content display, the Login and Register pages with form validation and error handling, the AthleteDashboard for athlete profile management, video uploads, and personal analytics, the ScoutDashboard for searching athletes, managing favorites, and accessing premium features, the AdminDashboard for platform administration and user management, the AthleteProfile page for public profile viewing, the UploadVideo page with file selection, preview, and submission workflows, the SearchAthletes page with filtering, sorting, and result presentation, the ClubPlans page for subscription management and payment processing, the new Contact page with comprehensive customer support functionality including FAQ system, WhatsApp integration, and email communication channels, and the SubscriptionPayment page component with subscription selection, PIX payment processing, and status tracking.
 
-**Updated** Enhanced user registration flow now supports URL parameter-based user type selection, improved subscription validation prevents inappropriate plan access, and SearchAthletes component includes performance optimizations.
+**Updated** Enhanced user registration flow now supports URL parameter-based user type selection, improved subscription validation prevents inappropriate plan access, and SearchAthletes component includes performance optimizations. The new Contact page significantly expands customer support capabilities with integrated communication channels.
 
 ## Project Structure
 The frontend is organized by pages and shared components. Pages are React functional components under frontend/src/pages. Shared UI components live under frontend/src/components. Authentication state is centralized via a React context provider. HTTP requests are handled by a shared Axios service with interceptors for auth tokens and automatic redirects on 401 responses.
@@ -64,6 +66,7 @@ UploadVideo["UploadVideo.jsx"]
 SearchAthletes["SearchAthletes.jsx"]
 ClubPlans["ClubPlans.jsx"]
 SubscriptionPayment["SubscriptionPayment.jsx"]
+Contact["Contact.jsx"]
 end
 subgraph "Shared Components"
 Navbar["Navbar.jsx"]
@@ -86,6 +89,7 @@ UploadVideo --> Navbar
 SearchAthletes --> Navbar
 ClubPlans --> Navbar
 SubscriptionPayment --> Navbar
+Contact --> Navbar
 Home --> Footer
 Login --> Footer
 Register --> Footer
@@ -97,6 +101,7 @@ UploadVideo --> Footer
 SearchAthletes --> Footer
 ClubPlans --> Footer
 SubscriptionPayment --> Footer
+Contact --> Footer
 Home --> Api
 Login --> AuthCtx
 Register --> AuthCtx
@@ -108,6 +113,7 @@ UploadVideo --> Api
 SearchAthletes --> Api
 ClubPlans --> Api
 SubscriptionPayment --> Api
+Contact --> Api
 AthleteDash --> AthleteCard
 ScoutDash --> AthleteCard
 SearchAthletes --> AthleteCard
@@ -128,7 +134,8 @@ Home --> VideoCard
 - [SearchAthletes.jsx:1-235](file://frontend/src/pages/SearchAthletes.jsx#L1-L235)
 - [ClubPlans.jsx:1-236](file://frontend/src/pages/ClubPlans.jsx#L1-L236)
 - [SubscriptionPayment.jsx:1-344](file://frontend/src/pages/SubscriptionPayment.jsx#L1-L344)
-- [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
+- [Contact.jsx:1-165](file://frontend/src/pages/Contact.jsx#L1-L165)
+- [Navbar.jsx:1-140](file://frontend/src/components/Navbar.jsx#L1-L140)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
 - [AthleteCard.jsx:1-92](file://frontend/src/components/AthleteCard.jsx#L1-L92)
 - [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
@@ -147,7 +154,8 @@ Home --> VideoCard
 - [SearchAthletes.jsx:1-235](file://frontend/src/pages/SearchAthletes.jsx#L1-L235)
 - [ClubPlans.jsx:1-236](file://frontend/src/pages/ClubPlans.jsx#L1-L236)
 - [SubscriptionPayment.jsx:1-344](file://frontend/src/pages/SubscriptionPayment.jsx#L1-L344)
-- [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
+- [Contact.jsx:1-165](file://frontend/src/pages/Contact.jsx#L1-L165)
+- [Navbar.jsx:1-140](file://frontend/src/components/Navbar.jsx#L1-L140)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
 - [AthleteCard.jsx:1-92](file://frontend/src/components/AthleteCard.jsx#L1-L92)
 - [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
@@ -303,6 +311,39 @@ ShowErr2 --> End
 **Section sources**
 - [Register.jsx:1-288](file://frontend/src/pages/Register.jsx#L1-L288)
 - [AuthContext.jsx:1-100](file://frontend/src/context/AuthContext.jsx#L1-L100)
+
+### Contact Page
+Purpose:
+- Provide comprehensive customer support functionality with integrated communication channels and frequently asked questions.
+
+Key behaviors:
+- WhatsApp integration with pre-filled message for instant customer service.
+- Email communication channel with subject line and recipient configuration.
+- Interactive FAQ system with expandable/collapsible questions and answers.
+- Professional layout with icons, responsive design, and clear call-to-action buttons.
+- Comprehensive coverage of common user questions about platform usage, pricing, sports accepted, and support procedures.
+
+```mermaid
+flowchart TD
+Open["Open Contact Page"] --> WhatsApp["Click WhatsApp button"]
+WhatsApp --> OpenWA["Open WhatsApp with pre-filled message"]
+OpenWA --> End(["Done"])
+Open --> Email["Click Email button"]
+Email --> OpenEmail["Open email client with pre-configured subject"]
+OpenEmail --> End
+Open --> FAQ["Expand FAQ questions"]
+FAQ --> Toggle["Toggle question visibility"]
+Toggle --> Answer["Display answer content"]
+Answer --> End
+```
+
+**Diagram sources**
+- [Contact.jsx:75-93](file://frontend/src/pages/Contact.jsx#L75-L93)
+- [Contact.jsx:96-112](file://frontend/src/pages/Contact.jsx#L96-L112)
+- [Contact.jsx:126-150](file://frontend/src/pages/Contact.jsx#L126-L150)
+
+**Section sources**
+- [Contact.jsx:1-165](file://frontend/src/pages/Contact.jsx#L1-L165)
 
 ### AthleteDashboard
 Purpose:
@@ -575,7 +616,7 @@ SP->>SP : Render status cards (Active/Pending/Rejected)
   - Lucide icons for visual elements.
 - No circular dependencies observed among pages and components.
 
-**Updated** Enhanced dependencies with URL parameter handling in Register page and user type validation in ClubPlans page.
+**Updated** Enhanced dependencies with URL parameter handling in Register page, user type validation in ClubPlans page, and new Contact page integration into the routing system.
 
 ```mermaid
 graph LR
@@ -590,6 +631,7 @@ UploadVideo["UploadVideo.jsx"] --> Api
 SearchAthletes["SearchAthletes.jsx"] --> Api
 ClubPlans["ClubPlans.jsx"] --> Api
 SubscriptionPayment["SubscriptionPayment.jsx"] --> Api
+Contact["Contact.jsx"] --> Api
 Navbar["Navbar.jsx"] --> AuthCtx
 Navbar --> Api
 Footer["Footer.jsx"] --> Api
@@ -609,7 +651,8 @@ VideoCard["VideoCard.jsx"] --> Api
 - [SearchAthletes.jsx:1-235](file://frontend/src/pages/SearchAthletes.jsx#L1-L235)
 - [ClubPlans.jsx:1-236](file://frontend/src/pages/ClubPlans.jsx#L1-L236)
 - [SubscriptionPayment.jsx:1-344](file://frontend/src/pages/SubscriptionPayment.jsx#L1-L344)
-- [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
+- [Contact.jsx:1-165](file://frontend/src/pages/Contact.jsx#L1-L165)
+- [Navbar.jsx:1-140](file://frontend/src/components/Navbar.jsx#L1-L140)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
 - [AthleteCard.jsx:1-92](file://frontend/src/components/AthleteCard.jsx#L1-L92)
 - [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
@@ -619,7 +662,7 @@ VideoCard["VideoCard.jsx"] --> Api
 **Section sources**
 - [AuthContext.jsx:1-100](file://frontend/src/context/AuthContext.jsx#L1-L100)
 - [api.js:1-42](file://frontend/src/services/api.js#L1-L42)
-- [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
+- [Navbar.jsx:1-140](file://frontend/src/components/Navbar.jsx#L1-L140)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
 - [AthleteCard.jsx:1-92](file://frontend/src/components/AthleteCard.jsx#L1-L92)
 - [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
@@ -632,6 +675,7 @@ VideoCard["VideoCard.jsx"] --> Api
 - File upload optimization: SubscriptionPayment uses FormData with proper boundary handling and file size validation.
 - **Updated** Performance optimizations in SearchAthletes: useCallback hooks prevent unnecessary re-creation of callback functions, and debouncing mechanism (300ms delay) reduces API calls during rapid typing.
 - **Updated** Enhanced user registration flow: URL parameter-based initialization eliminates redundant form steps for direct user type selection.
+- **Updated** Contact page optimization: State management for FAQ accordion uses efficient useState pattern with null checking for optimal performance.
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -648,6 +692,7 @@ Common issues and resolutions:
   - Resolution: Navigate to plans page and subscribe; ensure subscription status is active.
 - UploadVideo submission errors:
   - Symptom: Error banner after submission.
+  - Cause: Required fields not filled or invalid video URL.
   - Resolution: Ensure required fields are filled and video URL is valid; retry submission.
 - SubscriptionPayment file upload issues:
   - Symptom: Error when uploading proof-of-payment.
@@ -665,6 +710,10 @@ Common issues and resolutions:
   - Symptom: Athletes attempting to subscribe to scout/club plans.
   - Cause: Missing user type validation.
   - Resolution: System now redirects athletes to proper registration flow with `?tipo=scout` parameter.
+- **Updated** Contact page integration issues:
+  - Symptom: Contact page not accessible or navigation problems.
+  - Cause: Routing configuration or component import issues.
+  - Resolution: Verify Contact component is imported in App.jsx and route is properly configured; check for console errors.
 
 **Section sources**
 - [Login.jsx:59-64](file://frontend/src/pages/Login.jsx#L59-L64)
@@ -676,8 +725,9 @@ Common issues and resolutions:
 - [SubscriptionPayment.jsx:102-106](file://frontend/src/pages/SubscriptionPayment.jsx#L102-L106)
 - [Register.jsx:17-18](file://frontend/src/pages/Register.jsx#L17-L18)
 - [ClubPlans.jsx:38-41](file://frontend/src/pages/ClubPlans.jsx#L38-L41)
+- [Contact.jsx:1-165](file://frontend/src/pages/Contact.jsx#L1-L165)
 
 ## Conclusion
-Craque-Vision's page components are structured around clear separation of concerns: authentication state is centralized, HTTP communication is standardized, and reusable components ensure consistent UI. Each page implements robust data fetching, validation, and error handling tailored to its role—onboarding, athlete management, scouting, administration, public profiles, video submission, discovery, subscription management, and the new subscription payment processing workflow with PIX integration and admin approval processes.
+Craque-Vision's page components are structured around clear separation of concerns: authentication state is centralized, HTTP communication is standardized, and reusable components ensure consistent UI. Each page implements robust data fetching, validation, and error handling tailored to its role—onboarding, athlete management, scouting, administration, public profiles, video submission, discovery, subscription management, and the new subscription payment processing workflow with PIX integration and admin approval processes. The addition of the Contact page significantly enhances user support capabilities with integrated WhatsApp and email communication channels, comprehensive FAQ system, and professional customer service interface.
 
-**Updated** Recent enhancements include URL parameter-based user type selection in registration flow, improved subscription validation preventing inappropriate plan access, and performance optimizations in search functionality with useCallback hooks and debouncing mechanisms, providing a more streamlined and efficient user experience across all platform components.
+**Updated** Recent enhancements include URL parameter-based user type selection in registration flow, improved subscription validation preventing inappropriate plan access, performance optimizations in search functionality with useCallback hooks and debouncing mechanisms, and the comprehensive Contact page that provides integrated customer support with WhatsApp, email, and FAQ functionality, offering users multiple communication channels for seamless support experiences.
