@@ -1,38 +1,46 @@
 const express = require('express');
 const router = express.Router();
-const { uploadVideo, uploadThumbnail } = require('../config/upload');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const cloudinary = require('../config/cloudinary');
+const stream = require('stream');
 
-// Configuração do multer para avatar
-const avatarStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const dir = path.join(__dirname, '..', 'uploads', 'avatars');
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
-  }
+// Multer com memory storage para enviar buffer ao Cloudinary
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 200 * 1024 * 1024 } // 200MB
 });
-const uploadAvatar = multer({
-  storage: avatarStorage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+
+const uploadImage = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|gif|webp/;
-    const ext = allowed.test(path.extname(file.originalname).toLowerCase());
-    const mime = allowed.test(file.mimetype);
-    if (ext || mime) return cb(null, true);
+    const ext = allowed.test(require('path').extname(file.originalname).toLowerCase());
+    if (ext) return cb(null, true);
     cb(new Error('Apenas imagens (JPG, PNG, GIF, WebP) são permitidas.'));
   }
 });
 
-// Upload de avatar (qualquer usuário autenticado)
+// Helper: faz upload de buffer para o Cloudinary
+function uploadToCloudinary(buffer, folder, resourceType = 'auto') {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: resourceType },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result.secure_url);
+      }
+    );
+    const bufferStream = new stream.PassThrough();
+    bufferStream.end(buffer);
+    bufferStream.pipe(uploadStream);
+  });
+}
+
+// Upload de avatar
 router.post('/avatar', authenticate, (req, res) => {
-  uploadAvatar.single('avatar')(req, res, async (err) => {
+  uploadImage.single('avatar')(req, res, async (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({ error: 'Imagem muito grande. Máximo: 5MB.' });
@@ -44,23 +52,27 @@ router.post('/avatar', authenticate, (req, res) => {
       return res.status(400).json({ error: 'Nenhuma imagem enviada.' });
     }
 
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
-    
-    // Atualiza o avatar no banco
-    const User = require('../models/user.model');
-    const updatedUser = await User.updateAvatar(req.userId, avatarUrl);
+    try {
+      const avatarUrl = await uploadToCloudinary(req.file.buffer, 'craque-vision/avatars', 'image');
+      
+      const User = require('../models/user.model');
+      const updatedUser = await User.updateAvatar(req.userId, avatarUrl);
 
-    res.json({
-      message: 'Foto de perfil atualizada com sucesso!',
-      avatar_url: avatarUrl,
-      user: updatedUser
-    });
+      res.json({
+        message: 'Foto de perfil atualizada com sucesso!',
+        avatar_url: avatarUrl,
+        user: updatedUser
+      });
+    } catch (cloudErr) {
+      console.error('Cloudinary upload error:', cloudErr);
+      res.status(500).json({ error: 'Erro ao enviar imagem para o servidor.' });
+    }
   });
 });
 
 // Upload de vídeo
 router.post('/video', authenticate, authorize('athlete'), (req, res) => {
-  uploadVideo.single('video')(req, res, (err) => {
+  upload.single('video')(req, res, async (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({ error: 'Arquivo muito grande. Máximo: 200MB.' });
@@ -72,20 +84,24 @@ router.post('/video', authenticate, authorize('athlete'), (req, res) => {
       return res.status(400).json({ error: 'Nenhum vídeo enviado.' });
     }
 
-    // Retorna o caminho do vídeo salvo
-    const videoUrl = `/uploads/videos/${req.file.filename}`;
-    res.json({
-      message: 'Upload realizado com sucesso',
-      video_url: videoUrl,
-      filename: req.file.filename,
-      size: req.file.size
-    });
+    try {
+      const videoUrl = await uploadToCloudinary(req.file.buffer, 'craque-vision/videos', 'video');
+      res.json({
+        message: 'Upload realizado com sucesso',
+        video_url: videoUrl,
+        filename: req.file.originalname,
+        size: req.file.size
+      });
+    } catch (cloudErr) {
+      console.error('Cloudinary video upload error:', cloudErr);
+      res.status(500).json({ error: 'Erro ao enviar vídeo para o servidor.' });
+    }
   });
 });
 
 // Upload de thumbnail
 router.post('/thumbnail', authenticate, authorize('athlete'), (req, res) => {
-  uploadThumbnail.single('thumbnail')(req, res, (err) => {
+  uploadImage.single('thumbnail')(req, res, async (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({ error: 'Imagem muito grande. Máximo: 5MB.' });
@@ -97,12 +113,17 @@ router.post('/thumbnail', authenticate, authorize('athlete'), (req, res) => {
       return res.status(400).json({ error: 'Nenhuma imagem enviada.' });
     }
 
-    const thumbnailUrl = `/uploads/thumbnails/${req.file.filename}`;
-    res.json({
-      message: 'Thumbnail enviada com sucesso',
-      thumbnail_url: thumbnailUrl,
-      filename: req.file.filename
-    });
+    try {
+      const thumbnailUrl = await uploadToCloudinary(req.file.buffer, 'craque-vision/thumbnails', 'image');
+      res.json({
+        message: 'Thumbnail enviada com sucesso',
+        thumbnail_url: thumbnailUrl,
+        filename: req.file.originalname
+      });
+    } catch (cloudErr) {
+      console.error('Cloudinary thumbnail upload error:', cloudErr);
+      res.status(500).json({ error: 'Erro ao enviar imagem para o servidor.' });
+    }
   });
 });
 
