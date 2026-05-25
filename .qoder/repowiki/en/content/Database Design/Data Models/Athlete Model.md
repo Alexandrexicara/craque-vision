@@ -15,6 +15,14 @@
 - [api.js](file://frontend/src/services/api.js)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Enhanced search functionality with unified ILIKE operators for flexible matching
+- Added active user filtering to improve search results quality
+- Expanded search scope to include multiple fields (name, position, sport, city, current club)
+- Improved search performance with optimized query construction
+- Updated frontend search integration with debounced requests
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
@@ -27,7 +35,7 @@
 9. [Conclusion](#conclusion)
 
 ## Introduction
-This document provides comprehensive data model documentation for the Athlete model within the Craque Vision platform. It covers the complete sports profile structure, validation rules, data relationships with the User model, integration with video content, query methods for athlete searches and profile retrieval, data access patterns, indexing strategies, and business rules for athlete verification and profile completeness. Additionally, it includes practical examples of athlete registration workflows, profile updates, and search filtering mechanisms.
+This document provides comprehensive data model documentation for the Athlete model within the Craque Vision platform. It covers the complete sports profile structure, validation rules, data relationships with the User model, integration with video content, enhanced query methods for athlete searches and profile retrieval, data access patterns, indexing strategies, and business rules for athlete verification and profile completeness. Additionally, it includes practical examples of athlete registration workflows, profile updates, and advanced search filtering mechanisms with unified search capabilities.
 
 ## Project Structure
 The Athlete model is part of a layered architecture with clear separation between presentation, business logic, data access, and persistence:
@@ -71,8 +79,8 @@ SCHEMA --> DB
 - [server.js:1-40](file://backend/server.js#L1-L40)
 - [athlete.routes.js:1-14](file://backend/routes/athlete.routes.js#L1-L14)
 - [athlete.controller.js:1-91](file://backend/controllers/athlete.controller.js#L1-L91)
-- [athlete.model.js:1-119](file://backend/models/athlete.model.js#L1-L119)
-- [schema.sql:1-185](file://database/schema.sql#L1-L185)
+- [athlete.model.js:1-136](file://backend/models/athlete.model.js#L1-L136)
+- [schema.sql:1-189](file://database/schema.sql#L1-L189)
 
 **Section sources**
 - [server.js:1-40](file://backend/server.js#L1-L40)
@@ -112,7 +120,7 @@ The Athlete model defines a comprehensive sports profile with the following fiel
 - Content moderation: `created_at`, `updated_at` timestamps
 
 **Section sources**
-- [schema.sql:26-67](file://database/schema.sql#L26-L67)
+- [schema.sql:28-68](file://database/schema.sql#L28-L68)
 - [athlete.model.js:3-32](file://backend/models/athlete.model.js#L3-L32)
 
 ### Validation Rules and Constraints
@@ -131,9 +139,9 @@ The database enforces strict validation through PostgreSQL constraints:
 - NOT NULL constraints on critical fields
 
 **Section sources**
-- [schema.sql:14-24](file://database/schema.sql#L14-L24)
-- [schema.sql:27-67](file://database/schema.sql#L27-L67)
-- [schema.sql:157-180](file://database/schema.sql#L157-L180)
+- [schema.sql:14-25](file://database/schema.sql#L14-L25)
+- [schema.sql:28-68](file://database/schema.sql#L28-L68)
+- [schema.sql:161-184](file://database/schema.sql#L161-L184)
 
 ## Architecture Overview
 
@@ -164,7 +172,7 @@ Note over Client,DB : Authentication required for athlete operations
 **Diagram sources**
 - [auth.middleware.js:4-42](file://backend/middleware/auth.middleware.js#L4-L42)
 - [athlete.controller.js:39-52](file://backend/controllers/athlete.controller.js#L39-L52)
-- [athlete.model.js:40-49](file://backend/models/athlete.model.js#L40-L49)
+- [athlete.model.js:45-54](file://backend/models/athlete.model.js#L45-L54)
 
 ### Component Relationships
 The Athlete model integrates with multiple system components:
@@ -257,13 +265,13 @@ Like "many" --> "1" Video : "targets"
 
 **Diagram sources**
 - [user.model.js:4-39](file://backend/models/user.model.js#L4-L39)
-- [athlete.model.js:3-116](file://backend/models/athlete.model.js#L3-L116)
+- [athlete.model.js:3-136](file://backend/models/athlete.model.js#L3-L136)
 - [video.model.js:3-58](file://backend/models/video.model.js#L3-L58)
-- [schema.sql:14-138](file://database/schema.sql#L14-L138)
+- [schema.sql:14-142](file://database/schema.sql#L14-L142)
 
 **Section sources**
 - [user.model.js:1-42](file://backend/models/user.model.js#L1-L42)
-- [athlete.model.js:1-119](file://backend/models/athlete.model.js#L1-L119)
+- [athlete.model.js:1-136](file://backend/models/athlete.model.js#L1-L136)
 - [video.model.js:1-61](file://backend/models/video.model.js#L1-L61)
 
 ## Detailed Component Analysis
@@ -281,7 +289,7 @@ The Athlete model implements standard CRUD operations with specific business log
 **Read Operations:**
 - `findByUserId`: Retrieves athlete profile linked to specific user
 - `findById`: Fetches athlete with user details via JOIN operation
-- `search`: Dynamic query building with multiple filter criteria
+- `search`: Dynamic query building with multiple filter criteria and unified search
 
 **Update Operation:**
 - Partial updates using dynamic field mapping
@@ -291,8 +299,8 @@ The Athlete model implements standard CRUD operations with specific business log
 **Section sources**
 - [athlete.model.js:4-32](file://backend/models/athlete.model.js#L4-L32)
 - [athlete.model.js:34-49](file://backend/models/athlete.model.js#L34-L49)
-- [athlete.model.js:51-86](file://backend/models/athlete.model.js#L51-L86)
-- [athlete.model.js:88-115](file://backend/models/athlete.model.js#L88-L115)
+- [athlete.model.js:56-103](file://backend/models/athlete.model.js#L56-L103)
+- [athlete.model.js:105-132](file://backend/models/athlete.model.js#L105-L132)
 
 #### Authentication and Authorization
 The system implements role-based access control:
@@ -323,31 +331,40 @@ Next --> End
 - [auth.middleware.js:4-42](file://backend/middleware/auth.middleware.js#L4-L42)
 
 **Section sources**
-- [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
+- [auth.middleware.js:1-65](file://backend/middleware/auth.middleware.js#L1-L65)
 
-### Query Methods and Search Capabilities
+### Query Methods and Enhanced Search Capabilities
 
-#### Dynamic Search Implementation
-The search functionality provides flexible filtering through multiple criteria:
+#### Unified Search Implementation
+The search functionality provides enhanced filtering through multiple criteria with unified search capabilities:
+
+**Enhanced Search Features:**
+- **Unified Search**: Single `q` parameter searches across multiple fields
+- **Flexible Matching**: Uses ILIKE operators for case-insensitive partial matching
+- **Active User Filtering**: Automatically filters out inactive users
+- **Multi-field Coverage**: Searches name, position, sport, city, and current club
 
 **Supported Filters:**
-- `sport`: Athletic discipline (exact match)
-- `category`: Competitive level (exact match)
-- `state`: Geographic location (exact match)
-- `position`: Playing position (exact match)
+- `q`: Unified search term (ILIKE across multiple fields)
+- `sport`: Athletic discipline (ILIKE match)
+- `category`: Competitive level (ILIKE match)
+- `state`: Geographic location (ILIKE match)
+- `position`: Playing position (ILIKE match)
 
 **Search Algorithm:**
 1. Base query with JOIN between athletes and users tables
-2. Dynamic WHERE clause construction based on provided filters
-3. Parameterized queries to prevent SQL injection
-4. Consistent ordering by creation date (newest first)
+2. Active user filtering (`u.is_active = true`)
+3. Dynamic WHERE clause construction based on provided filters
+4. Unified search with ILIKE operators across multiple fields
+5. Parameterized queries to prevent SQL injection
+6. Consistent ordering by creation date (newest first)
 
 **Section sources**
-- [athlete.model.js:51-86](file://backend/models/athlete.model.js#L51-L86)
+- [athlete.model.js:56-103](file://backend/models/athlete.model.js#L56-L103)
 - [athlete.controller.js:73-81](file://backend/controllers/athlete.controller.js#L73-L81)
 
 #### Frontend Search Integration
-The frontend provides comprehensive search capabilities:
+The frontend provides comprehensive search capabilities with enhanced filtering:
 
 ```mermaid
 sequenceDiagram
@@ -357,26 +374,26 @@ participant API as "API Service"
 participant Backend as "Athlete Controller"
 participant Model as "Athlete Model"
 participant Database as "PostgreSQL"
-User->>Search : Apply Filters (sport, category, state, position)
-Search->>API : GET /api/athletes/search?filters
+User->>Search : Apply Filters (q, sport, category, state, position)
+Search->>API : GET /api/athletes/search?q=&filters
 API->>Backend : Route Handler
 Backend->>Model : search(filters)
-Model->>Database : Execute Parameterized Query
-Database-->>Model : Filtered Results
+Model->>Database : Execute Enhanced Parameterized Query
+Database-->>Model : Filtered Results with Active Users Only
 Model-->>Backend : Array of Athletes
 Backend-->>API : JSON Response
 API-->>Search : Athletes Data
 Search-->>User : Display Results
-Note over User,Database : Real-time filtering with debounced requests
+Note over User,Database : Real-time filtering with debounced requests and unified search
 ```
 
 **Diagram sources**
-- [SearchAthletes.jsx:30-45](file://frontend/src/pages/SearchAthletes.jsx#L30-L45)
+- [SearchAthletes.jsx:29-52](file://frontend/src/pages/SearchAthletes.jsx#L29-L52)
 - [athlete.controller.js:73-81](file://backend/controllers/athlete.controller.js#L73-L81)
-- [athlete.model.js:51-86](file://backend/models/athlete.model.js#L51-L86)
+- [athlete.model.js:56-103](file://backend/models/athlete.model.js#L56-L103)
 
 **Section sources**
-- [SearchAthletes.jsx:1-218](file://frontend/src/pages/SearchAthletes.jsx#L1-L218)
+- [SearchAthletes.jsx:1-202](file://frontend/src/pages/SearchAthletes.jsx#L1-L202)
 
 ### Business Rules and Verification Workflow
 
@@ -408,7 +425,7 @@ Athletes serve as content creators within the platform:
 
 **Section sources**
 - [video.model.js:18-26](file://backend/models/video.model.js#L18-L26)
-- [schema.sql:69-88](file://database/schema.sql#L69-L88)
+- [schema.sql:70-90](file://database/schema.sql#L70-L90)
 
 ## Dependency Analysis
 
@@ -487,7 +504,7 @@ VIDEOS ||--o{ LIKES : "targets"
 ```
 
 **Diagram sources**
-- [schema.sql:14-138](file://database/schema.sql#L14-L138)
+- [schema.sql:14-142](file://database/schema.sql#L14-L142)
 
 ### External Dependencies and Integration Points
 
@@ -502,7 +519,7 @@ VIDEOS ||--o{ LIKES : "targets"
 - Index optimization for search performance
 
 **Section sources**
-- [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
+- [auth.middleware.js:1-65](file://backend/middleware/auth.middleware.js#L1-L65)
 - [database.js:1-13](file://backend/config/database.js#L1-L13)
 
 ## Performance Considerations
@@ -517,26 +534,37 @@ The database schema implements strategic indexing for optimal query performance:
 - `idx_athletes_state`: Enables geographic queries
 - `idx_athletes_position`: Facilitates position-based searches
 
+**Enhanced Search Performance:**
+- Unified search across multiple fields with ILIKE operators
+- Active user filtering reduces result set size
+- Strategic indexing supports flexible matching operations
+
 **Additional Performance Enhancements:**
 - Composite indexes for frequently combined filters
 - Triggers for automatic timestamp updates
 - Connection pooling for concurrent database operations
 
 **Section sources**
-- [schema.sql:140-156](file://database/schema.sql#L140-L156)
+- [schema.sql:144-159](file://database/schema.sql#L144-L159)
 
 ### Query Optimization Patterns
 The Athlete model employs several optimization strategies:
 
-**Parameterized Queries:**
+**Enhanced Parameterized Queries:**
 - Prevents SQL injection while maintaining performance
 - Enables database query plan caching
-- Supports dynamic filter construction
+- Supports dynamic filter construction with unified search
 
 **Efficient Data Retrieval:**
 - Selective field retrieval to minimize bandwidth
 - JOIN operations optimized for user-profile aggregation
+- Active user filtering improves result quality
 - Pagination support for large result sets
+
+**Unified Search Optimization:**
+- Single query handles multiple search criteria
+- ILIKE operators enable flexible matching
+- Parameterized approach prevents performance degradation
 
 ## Troubleshooting Guide
 
@@ -552,10 +580,11 @@ The Athlete model employs several optimization strategies:
 - Check database availability and network connectivity
 - Review connection pool limits and timeout configurations
 
-**Search Performance Issues:**
-- Ensure appropriate indexes are in place
-- Monitor query execution plans
+**Enhanced Search Performance Issues:**
+- Ensure appropriate indexes are in place for ILIKE operations
+- Monitor query execution plans for unified search queries
 - Consider query result caching for frequently accessed data
+- Verify active user filtering is working correctly
 
 **Section sources**
 - [auth.middleware.js:24-32](file://backend/middleware/auth.middleware.js#L24-L32)
@@ -574,14 +603,16 @@ The system implements comprehensive error handling:
 Consistent JSON error responses with descriptive messages for client-side handling and user feedback.
 
 ## Conclusion
-The Athlete model provides a robust foundation for managing comprehensive sports profiles within the Craque Vision platform. Its design balances flexibility with strong validation, enabling rich athlete discovery while maintaining data integrity and performance. The integration with user authentication, video content management, and search functionality creates a cohesive ecosystem for athlete showcase and scouting operations.
+The Athlete model provides a robust foundation for managing comprehensive sports profiles within the Craque Vision platform. Its enhanced design balances flexibility with strong validation, enabling rich athlete discovery through unified search capabilities while maintaining data integrity and performance. The integration with user authentication, video content management, and advanced search functionality creates a cohesive ecosystem for athlete showcase and scouting operations.
 
-Key strengths of the implementation include:
+Key strengths of the enhanced implementation include:
 - Comprehensive profile structure supporting diverse sports disciplines
 - Strong validation rules preventing data inconsistencies
-- Efficient search capabilities with strategic indexing
+- Enhanced search capabilities with unified ILIKE operators across multiple fields
+- Active user filtering improving search result quality
+- Efficient search performance with strategic indexing
 - Clear separation of concerns through layered architecture
 - Robust authentication and authorization mechanisms
 - Scalable database design with performance optimizations
 
-The model's extensibility allows for future enhancements such as advanced analytics, social features, and expanded content types while maintaining backward compatibility and system stability.
+The model's extensibility allows for future enhancements such as advanced analytics, social features, and expanded content types while maintaining backward compatibility and system stability. The unified search functionality represents a significant improvement in user experience, enabling more intuitive and comprehensive athlete discovery through flexible matching across multiple criteria.

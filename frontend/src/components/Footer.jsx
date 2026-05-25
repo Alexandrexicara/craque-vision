@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
-import { Trophy, Instagram, Youtube, Mail } from 'lucide-react';
+import { Trophy, Instagram, Youtube, Mail, Phone } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const whatsappLink = 'https://wa.me/5538988283318?text=Olá! Tenho dúvidas sobre o Craque Vision';
+  const emailLink = 'mailto:santossilvac991@gmail.com?subject=Dúvida sobre o Craque Vision';
 
   return (
     <footer className="bg-primary-dark border-t border-accent/20">
@@ -23,8 +25,11 @@ const Footer = () => {
               <a href="#" className="text-gray-400 hover:text-accent transition-colors">
                 <Youtube className="w-5 h-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-accent transition-colors">
+              <a href={emailLink} className="text-gray-400 hover:text-accent transition-colors">
                 <Mail className="w-5 h-5" />
+              </a>
+              <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-green-400 transition-colors">
+                <Phone className="w-5 h-5" />
               </a>
             </div>
           </div>
@@ -75,14 +80,14 @@ const Footer = () => {
             <h3 className="text-white font-semibold mb-4">Suporte</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="#" className="text-gray-400 hover:text-accent transition-colors">
+                <Link to="/contato" className="text-gray-400 hover:text-accent transition-colors">
                   FAQ
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-accent transition-colors">
+                <Link to="/contato" className="text-gray-400 hover:text-accent transition-colors">
                   Contato
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="#" className="text-gray-400 hover:text-accent transition-colors">

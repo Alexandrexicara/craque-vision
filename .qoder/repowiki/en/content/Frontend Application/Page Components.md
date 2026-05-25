@@ -19,7 +19,17 @@
 - [VideoCard.jsx](file://frontend/src/components/VideoCard.jsx)
 - [AuthContext.jsx](file://frontend/src/context/AuthContext.jsx)
 - [api.js](file://frontend/src/services/api.js)
+- [auth.controller.js](file://backend/controllers/auth.controller.js)
+- [user.model.js](file://backend/models/user.model.js)
+- [schema.sql](file://database/schema.sql)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Enhanced Register page with URL parameter-based user type selection (tipo parameter)
+- Improved ClubPlans page with user type validation preventing inappropriate plan subscriptions
+- Refined SearchAthletes component with performance optimizations including useCallback hooks and debouncing mechanism
+- Updated authentication flow to support user type parameter in registration process
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -34,6 +44,8 @@
 
 ## Introduction
 This document provides comprehensive documentation for all Craque-Vision page components. It explains the Home page layout and featured content display, the Login and Register pages with form validation and error handling, the AthleteDashboard for athlete profile management, video uploads, and personal analytics, the ScoutDashboard for searching athletes, managing favorites, and accessing premium features, the AdminDashboard for platform administration and user management, the AthleteProfile page for public profile viewing, the UploadVideo page with file selection, preview, and submission workflows, the SearchAthletes page with filtering, sorting, and result presentation, the ClubPlans page for subscription management and payment processing, and the new SubscriptionPayment page component with subscription selection, PIX payment processing, and status tracking.
+
+**Updated** Enhanced user registration flow now supports URL parameter-based user type selection, improved subscription validation prevents inappropriate plan access, and SearchAthletes component includes performance optimizations.
 
 ## Project Structure
 The frontend is organized by pages and shared components. Pages are React functional components under frontend/src/pages. Shared UI components live under frontend/src/components. Authentication state is centralized via a React context provider. HTTP requests are handled by a shared Axios service with interceptors for auth tokens and automatic redirects on 401 responses.
@@ -107,14 +119,14 @@ Home --> VideoCard
 **Diagram sources**
 - [Home.jsx:1-231](file://frontend/src/pages/Home.jsx#L1-L231)
 - [Login.jsx:1-134](file://frontend/src/pages/Login.jsx#L1-L134)
-- [Register.jsx:1-287](file://frontend/src/pages/Register.jsx#L1-L287)
+- [Register.jsx:1-288](file://frontend/src/pages/Register.jsx#L1-L288)
 - [AthleteDashboard.jsx:1-277](file://frontend/src/pages/AthleteDashboard.jsx#L1-L277)
 - [ScoutDashboard.jsx:1-254](file://frontend/src/pages/ScoutDashboard.jsx#L1-L254)
 - [AdminDashboard.jsx:1-317](file://frontend/src/pages/AdminDashboard.jsx#L1-L317)
 - [AthleteProfile.jsx:1-302](file://frontend/src/pages/AthleteProfile.jsx#L1-L302)
 - [UploadVideo.jsx:1-234](file://frontend/src/pages/UploadVideo.jsx#L1-L234)
-- [SearchAthletes.jsx:1-218](file://frontend/src/pages/SearchAthletes.jsx#L1-L218)
-- [ClubPlans.jsx:1-209](file://frontend/src/pages/ClubPlans.jsx#L1-L209)
+- [SearchAthletes.jsx:1-235](file://frontend/src/pages/SearchAthletes.jsx#L1-L235)
+- [ClubPlans.jsx:1-236](file://frontend/src/pages/ClubPlans.jsx#L1-L236)
 - [SubscriptionPayment.jsx:1-344](file://frontend/src/pages/SubscriptionPayment.jsx#L1-L344)
 - [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
@@ -126,14 +138,14 @@ Home --> VideoCard
 **Section sources**
 - [Home.jsx:1-231](file://frontend/src/pages/Home.jsx#L1-L231)
 - [Login.jsx:1-134](file://frontend/src/pages/Login.jsx#L1-L134)
-- [Register.jsx:1-287](file://frontend/src/pages/Register.jsx#L1-L287)
+- [Register.jsx:1-288](file://frontend/src/pages/Register.jsx#L1-L288)
 - [AthleteDashboard.jsx:1-277](file://frontend/src/pages/AthleteDashboard.jsx#L1-L277)
 - [ScoutDashboard.jsx:1-254](file://frontend/src/pages/ScoutDashboard.jsx#L1-L254)
 - [AdminDashboard.jsx:1-317](file://frontend/src/pages/AdminDashboard.jsx#L1-L317)
 - [AthleteProfile.jsx:1-302](file://frontend/src/pages/AthleteProfile.jsx#L1-L302)
 - [UploadVideo.jsx:1-234](file://frontend/src/pages/UploadVideo.jsx#L1-L234)
-- [SearchAthletes.jsx:1-218](file://frontend/src/pages/SearchAthletes.jsx#L1-L218)
-- [ClubPlans.jsx:1-209](file://frontend/src/pages/ClubPlans.jsx#L1-L209)
+- [SearchAthletes.jsx:1-235](file://frontend/src/pages/SearchAthletes.jsx#L1-L235)
+- [ClubPlans.jsx:1-236](file://frontend/src/pages/ClubPlans.jsx#L1-L236)
 - [SubscriptionPayment.jsx:1-344](file://frontend/src/pages/SubscriptionPayment.jsx#L1-L344)
 - [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
@@ -257,20 +269,24 @@ ShowError --> End
 
 ### Register Page
 Purpose:
-- Onboard new users with a two-step process: account creation followed by user type selection.
+- Onboard new users with a two-step process: account creation followed by user type selection with URL parameter support.
 
 Key behaviors:
 - Step 1 validates name, email, password length, and password confirmation.
-- Step 2 selects user type (athlete, scout, club) and submits registration.
+- Step 2 selects user type (athlete, scout, club) with URL parameter-based initialization via `searchParams.get('tipo')`.
 - Displays step indicators and error messages.
 - Navigates to dashboard after successful registration.
+- Supports URL parameter `tipo` for direct user type selection (e.g., `/register?tipo=scout`).
+
+**Updated** Enhanced with URL parameter-based user type selection allowing direct navigation to specific user types.
 
 ```mermaid
 flowchart TD
 Step1["Step 1: Personal Info"] --> Validate1{"Valid?"}
 Validate1 --> |No| ShowErr1["Show validation error"] --> Step1
 Validate1 --> |Yes| Next["Proceed to Step 2"]
-Step2["Step 2: Select User Type"] --> Submit["AuthContext.register()"]
+Step2["Step 2: Select User Type"] --> InitType["Initialize from URL param 'tipo'"]
+InitType --> Submit["AuthContext.register()"]
 Submit --> Success{"Registered?"}
 Success --> |Yes| Route["Navigate by user_type"]
 Success --> |No| ShowErr2["Show error message"] --> Step2
@@ -280,11 +296,12 @@ ShowErr2 --> End
 ```
 
 **Diagram sources**
+- [Register.jsx:10-18](file://frontend/src/pages/Register.jsx#L10-L18)
 - [Register.jsx:42-91](file://frontend/src/pages/Register.jsx#L42-L91)
 - [AuthContext.jsx:40-57](file://frontend/src/context/AuthContext.jsx#L40-L57)
 
 **Section sources**
-- [Register.jsx:1-287](file://frontend/src/pages/Register.jsx#L1-L287)
+- [Register.jsx:1-288](file://frontend/src/pages/Register.jsx#L1-L288)
 - [AuthContext.jsx:1-100](file://frontend/src/context/AuthContext.jsx#L1-L100)
 
 ### AthleteDashboard
@@ -439,18 +456,22 @@ ShowErr --> End
 
 ### SearchAthletes
 Purpose:
-- Enable advanced filtering and search for athletes across sports, categories, states, and positions.
+- Enable advanced filtering and search for athletes across sports, categories, states, and positions with performance optimizations.
 
 Key behaviors:
 - Maintains filters and search query state.
 - Applies filters via URL query parameters.
 - Dynamically renders position options based on selected sport.
 - Paginates results with skeleton loaders.
+- Implements performance optimizations including useCallback hooks and debouncing mechanism.
+
+**Updated** Enhanced with performance optimizations including useCallback hooks and debouncing mechanism to improve search responsiveness.
 
 ```mermaid
 flowchart TD
 Open["Open Search Page"] --> ApplyFilters["Apply filters to URL"]
-ApplyFilters --> Fetch["GET /athletes/search?{filters}"]
+ApplyFilters --> Debounce["Debounce: wait 300ms after last input"]
+Debounce --> Fetch["GET /athletes/search?{filters}"]
 Fetch --> Results{"Results found?"}
 Results --> |Yes| Render["Render AthleteCards"]
 Results --> |No| Empty["Show empty state"]
@@ -459,10 +480,11 @@ Empty --> End
 ```
 
 **Diagram sources**
+- [SearchAthletes.jsx:29-52](file://frontend/src/pages/SearchAthletes.jsx#L29-L52)
 - [SearchAthletes.jsx:30-45](file://frontend/src/pages/SearchAthletes.jsx#L30-L45)
 
 **Section sources**
-- [SearchAthletes.jsx:1-218](file://frontend/src/pages/SearchAthletes.jsx#L1-L218)
+- [SearchAthletes.jsx:1-235](file://frontend/src/pages/SearchAthletes.jsx#L1-L235)
 
 ### ClubPlans
 Purpose:
@@ -472,6 +494,9 @@ Key behaviors:
 - Loads plans from backend.
 - Handles subscription flow: authenticated users proceed to ScoutDashboard, others to registration.
 - Highlights popular plan and compares features in a table.
+- Implements user type validation preventing inappropriate plan subscriptions.
+
+**Updated** Enhanced with user type validation preventing athletes from subscribing to scout/club plans, redirecting them to proper registration flow.
 
 ```mermaid
 sequenceDiagram
@@ -485,14 +510,17 @@ S-->>A : {plans}
 A-->>CP : Response
 CP->>CP : setPlans and render
 CP->>CP : handleSubscribe(planKey)
-CP->>CP : Navigate to /scout or /register
+CP->>CP : Check isAuthenticated
+CP->>CP : Check user_type === 'athlete'
+CP->>CP : Navigate to /register?tipo=scout or /pagamento
 ```
 
 **Diagram sources**
 - [ClubPlans.jsx:17-38](file://frontend/src/pages/ClubPlans.jsx#L17-L38)
+- [ClubPlans.jsx:32-43](file://frontend/src/pages/ClubPlans.jsx#L32-L43)
 
 **Section sources**
-- [ClubPlans.jsx:1-209](file://frontend/src/pages/ClubPlans.jsx#L1-L209)
+- [ClubPlans.jsx:1-236](file://frontend/src/pages/ClubPlans.jsx#L1-L236)
 
 ### SubscriptionPayment
 Purpose:
@@ -547,6 +575,8 @@ SP->>SP : Render status cards (Active/Pending/Rejected)
   - Lucide icons for visual elements.
 - No circular dependencies observed among pages and components.
 
+**Updated** Enhanced dependencies with URL parameter handling in Register page and user type validation in ClubPlans page.
+
 ```mermaid
 graph LR
 Login["Login.jsx"] --> AuthCtx["AuthContext.jsx"]
@@ -569,15 +599,15 @@ VideoCard["VideoCard.jsx"] --> Api
 
 **Diagram sources**
 - [Login.jsx:1-134](file://frontend/src/pages/Login.jsx#L1-L134)
-- [Register.jsx:1-287](file://frontend/src/pages/Register.jsx#L1-L287)
+- [Register.jsx:1-288](file://frontend/src/pages/Register.jsx#L1-L288)
 - [Home.jsx:1-231](file://frontend/src/pages/Home.jsx#L1-L231)
 - [AthleteDashboard.jsx:1-277](file://frontend/src/pages/AthleteDashboard.jsx#L1-L277)
 - [ScoutDashboard.jsx:1-254](file://frontend/src/pages/ScoutDashboard.jsx#L1-L254)
 - [AdminDashboard.jsx:1-317](file://frontend/src/pages/AdminDashboard.jsx#L1-L317)
 - [AthleteProfile.jsx:1-302](file://frontend/src/pages/AthleteProfile.jsx#L1-L302)
 - [UploadVideo.jsx:1-234](file://frontend/src/pages/UploadVideo.jsx#L1-L234)
-- [SearchAthletes.jsx:1-218](file://frontend/src/pages/SearchAthletes.jsx#L1-L218)
-- [ClubPlans.jsx:1-209](file://frontend/src/pages/ClubPlans.jsx#L1-L209)
+- [SearchAthletes.jsx:1-235](file://frontend/src/pages/SearchAthletes.jsx#L1-L235)
+- [ClubPlans.jsx:1-236](file://frontend/src/pages/ClubPlans.jsx#L1-L236)
 - [SubscriptionPayment.jsx:1-344](file://frontend/src/pages/SubscriptionPayment.jsx#L1-L344)
 - [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
@@ -600,6 +630,8 @@ VideoCard["VideoCard.jsx"] --> Api
 - Conditional rendering: ScoutDashboard avoids heavy computations when subscription is inactive.
 - Minimal re-renders: Pages use controlled forms and local state updates to avoid unnecessary renders.
 - File upload optimization: SubscriptionPayment uses FormData with proper boundary handling and file size validation.
+- **Updated** Performance optimizations in SearchAthletes: useCallback hooks prevent unnecessary re-creation of callback functions, and debouncing mechanism (300ms delay) reduces API calls during rapid typing.
+- **Updated** Enhanced user registration flow: URL parameter-based initialization eliminates redundant form steps for direct user type selection.
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -625,6 +657,14 @@ Common issues and resolutions:
   - Symptom: Payment approved but status still shows pending.
   - Cause: Admin approval required for manual verification.
   - Resolution: Wait for admin approval or contact support for assistance.
+- **Updated** Registration flow issues:
+  - Symptom: User type not persisting in registration.
+  - Cause: URL parameter not properly handled.
+  - Resolution: Ensure URL contains `?tipo=athlete|scout|club` parameter; verify backend accepts user_type field.
+- **Updated** Plan subscription restrictions:
+  - Symptom: Athletes attempting to subscribe to scout/club plans.
+  - Cause: Missing user type validation.
+  - Resolution: System now redirects athletes to proper registration flow with `?tipo=scout` parameter.
 
 **Section sources**
 - [Login.jsx:59-64](file://frontend/src/pages/Login.jsx#L59-L64)
@@ -634,6 +674,10 @@ Common issues and resolutions:
 - [UploadVideo.jsx:73-85](file://frontend/src/pages/UploadVideo.jsx#L73-L85)
 - [SubscriptionPayment.jsx:72-80](file://frontend/src/pages/SubscriptionPayment.jsx#L72-L80)
 - [SubscriptionPayment.jsx:102-106](file://frontend/src/pages/SubscriptionPayment.jsx#L102-L106)
+- [Register.jsx:17-18](file://frontend/src/pages/Register.jsx#L17-L18)
+- [ClubPlans.jsx:38-41](file://frontend/src/pages/ClubPlans.jsx#L38-L41)
 
 ## Conclusion
 Craque-Vision's page components are structured around clear separation of concerns: authentication state is centralized, HTTP communication is standardized, and reusable components ensure consistent UI. Each page implements robust data fetching, validation, and error handling tailored to its role—onboarding, athlete management, scouting, administration, public profiles, video submission, discovery, subscription management, and the new subscription payment processing workflow with PIX integration and admin approval processes.
+
+**Updated** Recent enhancements include URL parameter-based user type selection in registration flow, improved subscription validation preventing inappropriate plan access, and performance optimizations in search functionality with useCallback hooks and debouncing mechanisms, providing a more streamlined and efficient user experience across all platform components.

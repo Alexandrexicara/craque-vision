@@ -14,6 +14,7 @@ import SearchAthletes from './pages/SearchAthletes';
 import ClubPlans from './pages/ClubPlans';
 import SubscriptionPayment from './pages/SubscriptionPayment';
 import AdminDashboard from './pages/AdminDashboard';
+import Contact from './pages/Contact';
 import PrivateRoute from './components/PrivateRoute';
 
 console.log('✅ App.jsx carregado com sucesso');
@@ -33,6 +34,7 @@ function App() {
                 <Route path="/atleta/:id" element={<AthleteProfile />} />
                 <Route path="/buscar" element={<SearchAthletes />} />
                 <Route path="/planos" element={<ClubPlans />} />
+                <Route path="/contato" element={<Contact />} />
                 <Route path="/pagamento" element={
                   <PrivateRoute allowedTypes={['scout', 'club']}>
                     <SubscriptionPayment />
