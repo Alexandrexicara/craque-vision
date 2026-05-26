@@ -10,6 +10,7 @@
 - [PrivateRoute.jsx](file://frontend/src/components/PrivateRoute.jsx)
 - [VideoCard.jsx](file://frontend/src/components/VideoCard.jsx)
 - [AthleteCard.jsx](file://frontend/src/components/AthleteCard.jsx)
+- [CarouselBanner.jsx](file://frontend/src/components/CarouselBanner.jsx)
 - [Home.jsx](file://frontend/src/pages/Home.jsx)
 - [Login.jsx](file://frontend/src/pages/Login.jsx)
 - [Register.jsx](file://frontend/src/pages/Register.jsx)
@@ -18,6 +19,15 @@
 - [AdminDashboard.jsx](file://frontend/src/pages/AdminDashboard.jsx)
 - [api.js](file://frontend/src/services/api.js)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added new CarouselBanner component documentation with automatic cycling functionality
+- Updated Core Components section to include CarouselBanner
+- Enhanced Architecture Overview with CarouselBanner integration
+- Updated Dependency Analysis to reflect CarouselBanner usage
+- Added CarouselBanner API endpoints documentation
+- Updated Troubleshooting Guide with CarouselBanner-related issues
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -39,7 +49,7 @@ The frontend is organized around a small set of core files:
 - Entry point renders the root application.
 - App orchestrates routing, layout, and global providers.
 - Context manages authentication state and exposes hooks.
-- Components implement shared UI (Navbar, Footer, VideoCard, AthleteCard, PrivateRoute).
+- Components implement shared UI (Navbar, Footer, VideoCard, AthleteCard, CarouselBanner, PrivateRoute).
 - Pages implement domain-specific views (Home, Login, Register, AthleteDashboard, ScoutDashboard, AdminDashboard).
 - Services encapsulate HTTP client configuration and interceptors.
 
@@ -49,6 +59,7 @@ Main["main.jsx<br/>Entry point"] --> App["App.jsx<br/>Routing + Layout"]
 App --> Auth["AuthContext.jsx<br/>AuthProvider"]
 App --> Navbar["Navbar.jsx<br/>Header"]
 App --> Footer["Footer.jsx<br/>Footer"]
+App --> Carousel["CarouselBanner.jsx<br/>Promotional Banner"]
 App --> Routes["Routes<br/>Page components"]
 Routes --> Home["Home.jsx"]
 Routes --> Login["Login.jsx"]
@@ -62,12 +73,13 @@ Auth --> API["api.js<br/>Axios client + interceptors"]
 
 **Diagram sources**
 - [main.jsx:1-11](file://frontend/src/main.jsx#L1-L11)
-- [App.jsx:1-67](file://frontend/src/App.jsx#L1-L67)
+- [App.jsx:1-78](file://frontend/src/App.jsx#L1-L78)
 - [AuthContext.jsx:1-91](file://frontend/src/context/AuthContext.jsx#L1-L91)
 - [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
+- [CarouselBanner.jsx:1-63](file://frontend/src/components/CarouselBanner.jsx#L1-L63)
 - [PrivateRoute.jsx:1-27](file://frontend/src/components/PrivateRoute.jsx#L1-L27)
-- [Home.jsx:1-231](file://frontend/src/pages/Home.jsx#L1-L231)
+- [Home.jsx:1-312](file://frontend/src/pages/Home.jsx#L1-L312)
 - [Login.jsx:1-134](file://frontend/src/pages/Login.jsx#L1-L134)
 - [Register.jsx:1-287](file://frontend/src/pages/Register.jsx#L1-L287)
 - [AthleteDashboard.jsx:1-277](file://frontend/src/pages/AthleteDashboard.jsx#L1-L277)
@@ -77,7 +89,7 @@ Auth --> API["api.js<br/>Axios client + interceptors"]
 
 **Section sources**
 - [main.jsx:1-11](file://frontend/src/main.jsx#L1-L11)
-- [App.jsx:1-67](file://frontend/src/App.jsx#L1-L67)
+- [App.jsx:1-78](file://frontend/src/App.jsx#L1-L78)
 
 ## Core Components
 This section documents the reusable building blocks of the application.
@@ -90,7 +102,7 @@ This section documents the reusable building blocks of the application.
 
 - Footer
   - Grid-based layout with sections for athletes, clubs/scouts, support, and branding.
-  - Responsive design using Tailwind’s grid utilities.
+  - Responsive design using Tailwind's grid utilities.
 
 - VideoCard
   - Renders a video thumbnail with overlay play button and optional badges.
@@ -98,9 +110,18 @@ This section documents the reusable building blocks of the application.
   - Accepts an onClick handler to trigger navigation or preview.
 
 - AthleteCard
-  - Displays an athlete’s profile image, sport, and metadata (position, category).
+  - Displays an athlete's profile image, sport, and metadata (position, category).
   - Calculates and shows age from birth date.
   - Links to athlete profile page.
+
+- **CarouselBanner** *(New)*
+  - Displays promotional images with automatic cycling every 4 seconds.
+  - Supports clickable banners with external links.
+  - Features gradient overlays with optional titles.
+  - Responsive design with fixed height of 280px.
+  - Uses absolute positioning and CSS transitions for smooth fade effects.
+  - Automatically cycles through images without manual interaction.
+  - Gracefully handles empty states by returning null.
 
 - PrivateRoute
   - Guards routes by checking authentication and user type.
@@ -112,6 +133,7 @@ This section documents the reusable building blocks of the application.
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
 - [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
 - [AthleteCard.jsx:1-92](file://frontend/src/components/AthleteCard.jsx#L1-L92)
+- [CarouselBanner.jsx:1-63](file://frontend/src/components/CarouselBanner.jsx#L1-L63)
 - [PrivateRoute.jsx:1-27](file://frontend/src/components/PrivateRoute.jsx#L1-L27)
 
 ## Architecture Overview
@@ -129,6 +151,7 @@ Nav["Navbar.jsx"]
 Foot["Footer.jsx"]
 VCard["VideoCard.jsx"]
 ACard["AthleteCard.jsx"]
+CBanner["CarouselBanner.jsx"]
 PR["PrivateRoute.jsx"]
 end
 subgraph "Routing"
@@ -148,17 +171,20 @@ AppComp --> AuthCtx
 AppComp --> PR
 AppComp --> Nav
 AppComp --> Foot
+AppComp --> CBanner
 VCard --> |"uses"| API
 ACard --> |"uses"| API
+CBanner --> |"uses"| API
 AppComp --> |"HTTP calls"| API
 ```
 
 **Diagram sources**
-- [App.jsx:1-67](file://frontend/src/App.jsx#L1-L67)
+- [App.jsx:1-78](file://frontend/src/App.jsx#L1-L78)
 - [AuthContext.jsx:1-91](file://frontend/src/context/AuthContext.jsx#L1-L91)
 - [PrivateRoute.jsx:1-27](file://frontend/src/components/PrivateRoute.jsx#L1-L27)
 - [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
 - [Footer.jsx:1-112](file://frontend/src/components/Footer.jsx#L1-L112)
+- [CarouselBanner.jsx:1-63](file://frontend/src/components/CarouselBanner.jsx#L1-L63)
 - [VideoCard.jsx:1-48](file://frontend/src/components/VideoCard.jsx#L1-L48)
 - [AthleteCard.jsx:1-92](file://frontend/src/components/AthleteCard.jsx#L1-L92)
 - [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
@@ -232,6 +258,59 @@ CheckRole --> |not allowed| ToHome["Redirect to /"]
 **Section sources**
 - [PrivateRoute.jsx:1-27](file://frontend/src/components/PrivateRoute.jsx#L1-L27)
 
+### CarouselBanner Component
+The CarouselBanner component provides automatic promotional image display with the following features:
+
+**Core Functionality:**
+- Automatic cycling every 4 seconds using setInterval
+- Smooth fade transitions between images
+- Responsive design with fixed 280px height
+- Gradient overlays with optional titles
+- Clickable banners with external links support
+
+**Data Management:**
+- Fetches promotional images from `/carousel` endpoint
+- Uses absolute positioning for layered image display
+- Implements circular navigation (next/previous)
+- Graceful handling of empty states
+
+**Styling and UX:**
+- Fixed height container with overflow hidden
+- Absolute positioning for image layers
+- CSS transitions for smooth opacity changes
+- Gradient overlays for text readability
+- Responsive image scaling with object-cover
+
+**Integration Points:**
+- Integrated into App.jsx layout in two positions (top and bottom)
+- Uses AuthContext for user state awareness
+- Leverages Tailwind CSS for styling
+- Depends on api.js for data fetching
+
+```mermaid
+sequenceDiagram
+participant Comp as "CarouselBanner.jsx"
+participant API as "api.js"
+participant Timer as "setInterval"
+participant DOM as "DOM Elements"
+Comp->>API : GET /carousel
+API-->>Comp : Array of carousel items
+Comp->>Timer : setInterval(next, 4000)
+Timer->>Comp : next() callback
+Comp->>DOM : Update current image opacity
+loop Every 4 seconds
+Timer->>Comp : next()
+Comp->>DOM : Fade to next image
+end
+```
+
+**Diagram sources**
+- [CarouselBanner.jsx:8-23](file://frontend/src/components/CarouselBanner.jsx#L8-L23)
+- [CarouselBanner.jsx:27-59](file://frontend/src/components/CarouselBanner.jsx#L27-L59)
+
+**Section sources**
+- [CarouselBanner.jsx:1-63](file://frontend/src/components/CarouselBanner.jsx#L1-L63)
+
 ### Routing Configuration
 App.jsx defines the routing tree:
 - Public pages: Home, Login, Register, SearchAthletes, ClubPlans.
@@ -243,6 +322,7 @@ App.jsx defines the routing tree:
 
 Layout:
 - Navbar and Footer wrap the Routes inside a flex container to ensure proper spacing and footer positioning.
+- CarouselBanner is positioned at both top and bottom of the main content area.
 
 ```mermaid
 sequenceDiagram
@@ -263,11 +343,11 @@ end
 ```
 
 **Diagram sources**
-- [App.jsx:36-55](file://frontend/src/App.jsx#L36-L55)
+- [App.jsx:46-55](file://frontend/src/App.jsx#L46-L55)
 - [PrivateRoute.jsx:4-24](file://frontend/src/components/PrivateRoute.jsx#L4-L24)
 
 **Section sources**
-- [App.jsx:1-67](file://frontend/src/App.jsx#L1-L67)
+- [App.jsx:1-78](file://frontend/src/App.jsx#L1-L78)
 
 ### API Service Layer and HTTP Client
 The api.js client:
@@ -302,15 +382,41 @@ end
 **Section sources**
 - [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
 
+### Backend API Endpoints for CarouselBanner
+The CarouselBanner component communicates with the following backend endpoints:
+
+**Public Endpoint:**
+- `GET /carousel` - Returns active promotional images for public display
+- Response format: Array of carousel items with image_url, title, link, and metadata
+
+**Admin Endpoints:**
+- `GET /carousel/admin` - Returns all carousel items (active/inactive) for admin management
+- `POST /carousel` - Creates new carousel item with image upload
+- `PUT /carousel/:id` - Updates existing carousel item
+- `DELETE /carousel/:id` - Removes carousel item
+
+**Data Model:**
+- image_url: Secure Cloudinary URL for the promotional image
+- title: Optional banner title text
+- link: Optional external URL for click-through
+- is_active: Boolean flag for display status
+- sort_order: Integer for ordering carousel items
+
+**Section sources**
+- [carousel.routes.js:36-54](file://backend/routes/carousel.routes.js#L36-L54)
+- [carousel.routes.js:56-103](file://backend/routes/carousel.routes.js#L56-L103)
+- [carousel.model.js:3-49](file://backend/models/carousel.model.js#L3-L49)
+
 ### Page-Based Structure
 
 #### Home
 - Fetches featured videos and recent athletes concurrently.
 - Renders hero section, sports grid, featured content rows, and benefits.
 - Uses VideoCard and AthleteCard for content cards.
+- **Updated**: CarouselBanner is positioned at the top of the main content area.
 
 **Section sources**
-- [Home.jsx:1-231](file://frontend/src/pages/Home.jsx#L1-L231)
+- [Home.jsx:1-312](file://frontend/src/pages/Home.jsx#L1-L312)
 
 #### Login
 - Form with email, password, and toggle for password visibility.
@@ -353,17 +459,20 @@ end
   - Users: list with delete action.
   - Videos: approve/reject actions.
   - Subscriptions: list with status.
+  - **Carousel Management**: Complete carousel administration interface.
 - Uses tables and action buttons.
+- **Updated**: Includes comprehensive carousel management with upload, edit, and delete functionality.
 
 **Section sources**
 - [AdminDashboard.jsx:1-317](file://frontend/src/pages/AdminDashboard.jsx#L1-L317)
 
 ## Dependency Analysis
 Key dependencies and relationships:
-- App.jsx depends on AuthProvider, React Router, Navbar, Footer, and page components.
+- App.jsx depends on AuthProvider, React Router, Navbar, Footer, CarouselBanner, and page components.
 - PrivateRoute depends on AuthContext to enforce access control.
 - Pages depend on api.js for HTTP requests and on shared components for UI.
 - Navbar depends on AuthContext for user state and logout.
+- **CarouselBanner** depends on api.js for data fetching and uses Tailwind CSS for styling.
 
 ```mermaid
 graph LR
@@ -371,25 +480,29 @@ App["App.jsx"] --> Auth["AuthContext.jsx"]
 App --> Router["React Router"]
 App --> Nav["Navbar.jsx"]
 App --> Foot["Footer.jsx"]
+App --> CBanner["CarouselBanner.jsx"]
 App --> PR["PrivateRoute.jsx"]
 PR --> Auth
 Nav --> Auth
-Pages["Pages"] --> API["api.js"]
+CBanner --> API["api.js"]
+Pages["Pages"] --> API
 Cards["Cards"] --> API
 ```
 
 **Diagram sources**
-- [App.jsx:1-67](file://frontend/src/App.jsx#L1-L67)
+- [App.jsx:1-78](file://frontend/src/App.jsx#L1-L78)
 - [AuthContext.jsx:1-91](file://frontend/src/context/AuthContext.jsx#L1-L91)
 - [PrivateRoute.jsx:1-27](file://frontend/src/components/PrivateRoute.jsx#L1-L27)
 - [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
+- [CarouselBanner.jsx:1-63](file://frontend/src/components/CarouselBanner.jsx#L1-L63)
 - [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
 
 **Section sources**
-- [App.jsx:1-67](file://frontend/src/App.jsx#L1-L67)
+- [App.jsx:1-78](file://frontend/src/App.jsx#L1-L78)
 - [AuthContext.jsx:1-91](file://frontend/src/context/AuthContext.jsx#L1-L91)
 - [PrivateRoute.jsx:1-27](file://frontend/src/components/PrivateRoute.jsx#L1-L27)
 - [Navbar.jsx:1-130](file://frontend/src/components/Navbar.jsx#L1-L130)
+- [CarouselBanner.jsx:1-63](file://frontend/src/components/CarouselBanner.jsx#L1-L63)
 - [api.js:1-36](file://frontend/src/services/api.js#L1-L36)
 
 ## Performance Considerations
@@ -398,6 +511,11 @@ Cards["Cards"] --> API
 - Conditional rendering: Avoid rendering heavy components until data is ready.
 - Memoization: Consider memoizing props passed to cards to prevent unnecessary re-renders.
 - Lazy loading: For large lists, consider pagination or virtualized lists.
+- **CarouselBanner Performance**: 
+  - Uses efficient absolute positioning for image layers
+  - Implements useCallback for navigation functions to prevent re-renders
+  - Clears intervals on component unmount to prevent memory leaks
+  - Graceful handling of empty states to avoid unnecessary DOM manipulation
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -421,14 +539,33 @@ Common issues and resolutions:
   - Behavior: Redirects to dashboard matching user_type.
   - Action: Confirm user_type values and route mapping.
 
+- **CarouselBanner Issues** *(New)*
+  - No images displayed
+    - Cause: Empty carousel table or all items inactive
+    - Behavior: Component returns null gracefully
+    - Action: Verify carousel items exist and are active in AdminDashboard
+  - Images not cycling automatically
+    - Cause: Single image or interval cleanup
+    - Behavior: Carousel stops cycling after component unmount
+    - Action: Ensure multiple images exist; check browser tab focus
+  - Click-through links not working
+    - Cause: Missing link property or external security restrictions
+    - Behavior: Images appear clickable but don't navigate
+    - Action: Verify link URLs and security attributes
+  - Image quality issues
+    - Cause: Large image uploads or Cloudinary processing
+    - Behavior: Blurry or pixelated promotional images
+    - Action: Use recommended image dimensions; check Cloudinary settings
+
 **Section sources**
 - [api.js:23-33](file://frontend/src/services/api.js#L23-L33)
 - [PrivateRoute.jsx:7-21](file://frontend/src/components/PrivateRoute.jsx#L7-L21)
 - [Login.jsx:30-42](file://frontend/src/pages/Login.jsx#L30-L42)
 - [Register.jsx:66-91](file://frontend/src/pages/Register.jsx#L66-L91)
+- [CarouselBanner.jsx:8-23](file://frontend/src/components/CarouselBanner.jsx#L8-L23)
 
 ## Conclusion
-The frontend implements a clean separation of concerns with React Router for navigation, Context API for authentication state, and a centralized Axios client for HTTP communication. The component library promotes reuse and consistency, while Tailwind CSS enables rapid, responsive UI development. The protected routing ensures secure access to role-specific dashboards, and the API layer centralizes error handling and session management.
+The frontend implements a clean separation of concerns with React Router for navigation, Context API for authentication state, and a centralized Axios client for HTTP communication. The component library promotes reuse and consistency, while Tailwind CSS enables rapid, responsive UI development. The protected routing ensures secure access to role-specific dashboards, and the API layer centralizes error handling and session management. **The new CarouselBanner component enhances the promotional capabilities with automatic cycling and responsive design, providing an engaging user experience for marketing content.**
 
 ## Appendices
 
@@ -438,9 +575,32 @@ The frontend implements a clean separation of concerns with React Router for nav
 - Apply responsive breakpoints (sm, md, lg) to adapt layouts across screen sizes.
 - Prefer flexbox and grid for modern layouts; avoid fixed widths where possible.
 - Use card containers for content sections to maintain depth and visual hierarchy.
+- **CarouselBanner Styling**: 
+  - Fixed 280px height for consistent visual impact
+  - Gradient overlays for text readability
+  - Smooth opacity transitions for fade effects
+  - Responsive object-cover for image scaling
 
 ### Component Composition Best Practices
 - Keep components functional and single-responsibility.
 - Pass data via props and callbacks; avoid deep prop drilling by grouping related props.
-- Centralize shared UI in Navbar, Footer, and cards.
+- Centralize shared UI in Navbar, Footer, CarouselBanner, and cards.
 - Use lazy loading and skeletons for improved perceived performance.
+- **CarouselBanner Integration**: 
+  - Place at strategic positions in app layout for maximum visibility
+  - Ensure adequate spacing for optimal user experience
+  - Consider content placement in relation to navigation elements
+
+### CarouselBanner Implementation Details
+**Technical Specifications:**
+- Automatic cycling interval: 4000ms (4 seconds)
+- Transition duration: 700ms with ease-in-out timing
+- Image sizing: Full container coverage with object-fit: cover
+- Accessibility: Proper alt text for screen readers
+- Security: External links use target="_blank" and rel="noopener noreferrer"
+
+**Development Notes:**
+- Component returns null when no images available to prevent layout issues
+- Uses React.memo patterns internally for performance optimization
+- Implements cleanup functions to prevent memory leaks
+- Graceful degradation for edge cases and error conditions

@@ -10,12 +10,23 @@
 - [video.model.js](file://backend/models/video.model.js)
 - [athlete.model.js](file://backend/models/athlete.model.js)
 - [subscription.model.js](file://backend/models/subscription.model.js)
+- [carousel.model.js](file://backend/models/carousel.model.js)
+- [carousel.routes.js](file://backend/routes/carousel.routes.js)
 - [database.js](file://backend/config/database.js)
 - [server.js](file://backend/server.js)
+- [migrate.js](file://backend/migrate.js)
 - [schema.sql](file://database/schema.sql)
 - [AdminDashboard.jsx](file://frontend/src/pages/AdminDashboard.jsx)
 - [api.js](file://frontend/src/services/api.js)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added comprehensive carousel management system documentation
+- Documented new carousel endpoints for image upload, management, and activation controls
+- Updated administrative workflows to include carousel management operations
+- Added carousel-specific API reference with complete endpoint specifications
+- Enhanced frontend integration documentation for carousel management interface
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -30,19 +41,20 @@
 10. [Content Moderation](#content-moderation)
 11. [User Management](#user-management)
 12. [Subscription Management](#subscription-management)
-13. [Audit Trails and Permissions](#audit-trails-and-permissions)
-14. [Troubleshooting Guide](#troubleshooting-guide)
-15. [Conclusion](#conclusion)
+13. [Carousel Management System](#carousel-management-system)
+14. [Audit Trails and Permissions](#audit-trails-and-permissions)
+15. [Troubleshooting Guide](#troubleshooting-guide)
+16. [Conclusion](#conclusion)
 
 ## Introduction
 
-The Administrative Dashboard and System Management features provide comprehensive administrative capabilities for the Craque Vision platform. This system enables administrators to monitor platform health, manage user accounts, moderate content, track subscriptions, and maintain overall system integrity. The administrative interface combines robust backend APIs with a React-based frontend dashboard, providing real-time insights and operational controls.
+The Administrative Dashboard and System Management features provide comprehensive administrative capabilities for the Craque Vision platform. This system enables administrators to monitor platform health, manage user accounts, moderate content, track subscriptions, maintain overall system integrity, and manage promotional content through an integrated carousel system. The administrative interface combines robust backend APIs with a React-based frontend dashboard, providing real-time insights and operational controls.
 
-The administrative system is built on a secure foundation with role-based access control, JWT authentication, and comprehensive data validation. It supports multiple user types (athlete, scout, club, admin) while maintaining strict separation of privileges through the admin role designation.
+The administrative system is built on a secure foundation with role-based access control, JWT authentication, and comprehensive data validation. It supports multiple user types (athlete, scout, club, admin) while maintaining strict separation of privileges through the admin role designation. The enhanced carousel management system allows administrators to upload promotional images, configure links, manage activation status, and control display order through an intuitive interface.
 
 ## Project Structure
 
-The administrative system follows a modular architecture with clear separation of concerns:
+The administrative system follows a modular architecture with clear separation of concerns, now including carousel management capabilities:
 
 ```mermaid
 graph TB
@@ -53,6 +65,7 @@ Controllers[Controllers Layer]
 Middleware[Middleware Layer]
 Models[Models Layer]
 Config[Config Layer]
+Migration[Migrate.js]
 end
 subgraph "Frontend Layer"
 AdminUI[AdminDashboard.jsx]
@@ -61,7 +74,8 @@ AuthContext[Auth Context]
 end
 subgraph "Database Layer"
 Schema[Schema.sql]
-Tables[PostgreSQL Tables]
+CarouselTable[Carousel Table]
+Migration[Migration Scripts]
 end
 AdminUI --> APIService
 APIService --> Server
@@ -70,22 +84,27 @@ Routes --> Controllers
 Controllers --> Middleware
 Controllers --> Models
 Models --> Config
-Config --> Tables
-Tables --> Schema
+Config --> CarouselTable
+Migration --> CarouselTable
+CarouselTable --> Schema
 ```
 
 **Diagram sources**
 - [server.js:1-40](file://backend/server.js#L1-L40)
 - [admin.routes.js:1-15](file://backend/routes/admin.routes.js#L1-L15)
 - [admin.controller.js:1-121](file://backend/controllers/admin.controller.js#L1-L121)
+- [carousel.routes.js:1-106](file://backend/routes/carousel.routes.js#L1-L106)
+- [carousel.model.js:1-52](file://backend/models/carousel.model.js#L1-L52)
+- [migrate.js:135-143](file://backend/migrate.js#L135-L143)
 
 **Section sources**
 - [server.js:1-40](file://backend/server.js#L1-L40)
 - [admin.routes.js:1-15](file://backend/routes/admin.routes.js#L1-L15)
+- [carousel.routes.js:1-106](file://backend/routes/carousel.routes.js#L1-L106)
 
 ## Core Components
 
-The administrative system consists of several interconnected components that work together to provide comprehensive platform management capabilities:
+The administrative system consists of several interconnected components that work together to provide comprehensive platform management capabilities, now enhanced with carousel management:
 
 ### Authentication and Authorization
 The system implements a two-tier authentication system:
@@ -94,11 +113,12 @@ The system implements a two-tier authentication system:
 - **Optional Authentication**: Support for public endpoints requiring no authentication
 
 ### Data Management Layer
-The system manages four primary data domains:
+The system manages five primary data domains:
 - **User Management**: Complete user lifecycle management
 - **Content Moderation**: Video approval and rejection workflows
 - **Analytics Dashboard**: Real-time platform statistics
 - **Subscription Tracking**: Revenue and membership monitoring
+- **Carousel Management**: Promotional image management and display control
 
 ### Frontend Interface
 The React-based administrative dashboard provides:
@@ -106,49 +126,56 @@ The React-based administrative dashboard provides:
 - Interactive management controls
 - Responsive design for various screen sizes
 - Comprehensive filtering and sorting capabilities
+- Integrated carousel management interface with upload forms and activation controls
 
 **Section sources**
 - [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
 - [auth.controller.js:1-72](file://backend/controllers/auth.controller.js#L1-L72)
-- [AdminDashboard.jsx:1-317](file://frontend/src/pages/AdminDashboard.jsx#L1-L317)
+- [AdminDashboard.jsx:1-605](file://frontend/src/pages/AdminDashboard.jsx#L1-L605)
 
 ## Architecture Overview
 
-The administrative architecture follows a layered pattern with clear separation between presentation, business logic, and data access layers:
+The administrative architecture follows a layered pattern with clear separation between presentation, business logic, and data access layers, now including carousel management infrastructure:
 
 ```mermaid
 sequenceDiagram
 participant Admin as "Admin Dashboard"
-participant API as "Admin API"
+participant API as "Carousel API"
 participant Auth as "Auth Middleware"
-participant Controller as "Admin Controller"
-participant Model as "Database Models"
+participant Upload as "Multer Cloudinary"
+participant Controller as "Carousel Controller"
+participant Model as "Carousel Model"
 participant DB as "PostgreSQL"
-Admin->>API : Request Dashboard Stats
+Admin->>API : POST /carousel (FormData)
 API->>Auth : Verify JWT Token
 Auth->>Model : Load User Data
 Model->>DB : Query User Info
 DB-->>Model : User Record
 Model-->>Auth : User Object
 Auth-->>API : Authorized Access
-API->>Controller : getDashboardStats()
-Controller->>Model : Execute Analytics Queries
-Model->>DB : Run Aggregation Queries
-DB-->>Model : Query Results
-Model-->>Controller : Statistics Data
+API->>Upload : Process Image Upload
+Upload->>Upload : Validate File Type & Size
+Upload->>Upload : Upload to Cloudinary
+Upload-->>API : Return Secure URL
+API->>Controller : createCarouselItem()
+Controller->>Model : Execute INSERT Query
+Model->>DB : Insert Carousel Item
+DB-->>Model : New Item Record
+Model-->>Controller : Created Item
 Controller-->>API : JSON Response
-API-->>Admin : Dashboard Metrics
+API-->>Admin : Upload Confirmation
 ```
 
 **Diagram sources**
-- [admin.routes.js:6-12](file://backend/routes/admin.routes.js#L6-L12)
+- [carousel.routes.js:57-75](file://backend/routes/carousel.routes.js#L57-L75)
 - [auth.middleware.js:4-33](file://backend/middleware/auth.middleware.js#L4-L33)
-- [admin.controller.js:7-31](file://backend/controllers/admin.controller.js#L7-L31)
+- [carousel.model.js:18-25](file://backend/models/carousel.model.js#L18-L25)
 
 The architecture ensures that all administrative operations are:
 - **Secure**: Through mandatory JWT authentication and role verification
 - **Scalable**: With modular components and efficient database queries
 - **Maintainable**: Following clean separation of concerns and consistent patterns
+- **Cloud-Integrated**: With automated image processing and storage through Cloudinary
 
 ## Detailed Component Analysis
 
@@ -166,6 +193,13 @@ class AdminController {
 +approveVideo(req, res) Promise~void~
 +rejectVideo(req, res) Promise~void~
 +deleteUser(req, res) Promise~void~
+}
+class CarouselController {
++getAllCarouselItems(req, res) Promise~void~
++getAllCarouselItemsAdmin(req, res) Promise~void~
++createCarouselItem(req, res) Promise~void~
++updateCarouselItem(req, res) Promise~void~
++deleteCarouselItem(req, res) Promise~void~
 }
 class DatabasePool {
 +query(sql, params) Promise~QueryResult~
@@ -189,14 +223,24 @@ class Subscription {
 +isActive(id) Promise~boolean~
 +updateStatus(id, status) Promise~Subscription~
 }
+class Carousel {
++getAll() Promise~CarouselItem[]~
++getAllAdmin() Promise~CarouselItem[]~
++create(data) Promise~CarouselItem~
++update(id, fields) Promise~CarouselItem~
++delete(id) Promise~void~
+}
 AdminController --> DatabasePool : "uses"
 AdminController --> User : "manages"
 AdminController --> Video : "moderates"
 AdminController --> Subscription : "monitors"
+CarouselController --> DatabasePool : "uses"
+CarouselController --> Carousel : "manages"
 ```
 
 **Diagram sources**
 - [admin.controller.js:1-121](file://backend/controllers/admin.controller.js#L1-L121)
+- [carousel.model.js:3-49](file://backend/models/carousel.model.js#L3-L49)
 - [user.model.js:4-42](file://backend/models/user.model.js#L4-L42)
 - [video.model.js:3-61](file://backend/models/video.model.js#L3-L61)
 - [subscription.model.js:3-55](file://backend/models/subscription.model.js#L3-L55)
@@ -242,6 +286,15 @@ Next --> End
 **Base URL**: `/api/admin`
 
 All administrative endpoints require:
+- **Authorization Header**: `Bearer <JWT_TOKEN>`
+- **Admin Role**: Must have `user_type = 'admin'`
+- **Token Expiration**: 7-day validity period
+
+### Base URL and Authentication
+
+**Base URL**: `/api/carousel`
+
+All carousel management endpoints require:
 - **Authorization Header**: `Bearer <JWT_TOKEN>`
 - **Admin Role**: Must have `user_type = 'admin'`
 - **Token Expiration**: 7-day validity period
@@ -456,6 +509,149 @@ Authorization: Bearer <token>
 - [admin.routes.js:9](file://backend/routes/admin.routes.js#L9)
 - [admin.controller.js:63-76](file://backend/controllers/admin.controller.js#L63-L76)
 
+### Carousel Management Endpoints
+
+#### GET /
+Retrieves all active carousel items for public display.
+
+**Request**:
+```
+GET /api/carousel/
+```
+
+**Response**:
+```json
+[
+  {
+    "id": 1,
+    "image_url": "https://res.cloudinary.com/demo/image/upload/v123/craque-vision/carousel/promo1.jpg",
+    "title": "Summer Sale",
+    "link": "https://example.com/summer-sale",
+    "is_active": true,
+    "sort_order": 0,
+    "created_at": "2024-01-15T10:30:00Z"
+  }
+]
+```
+
+#### GET /admin
+Retrieves all carousel items including inactive ones for administrative management.
+
+**Request**:
+```
+GET /api/carousel/admin
+Authorization: Bearer <token>
+```
+
+**Response**:
+```json
+[
+  {
+    "id": 1,
+    "image_url": "https://res.cloudinary.com/demo/image/upload/v123/craque-vision/carousel/promo1.jpg",
+    "title": "Summer Sale",
+    "link": "https://example.com/summer-sale",
+    "is_active": true,
+    "sort_order": 0,
+    "created_at": "2024-01-15T10:30:00Z"
+  },
+  {
+    "id": 2,
+    "image_url": "https://res.cloudinary.com/demo/image/upload/v123/craque-vision/carousel/promo2.jpg",
+    "title": "New Feature",
+    "link": null,
+    "is_active": false,
+    "sort_order": 1,
+    "created_at": "2024-01-14T14:22:00Z"
+  }
+]
+```
+
+#### POST /
+Creates a new carousel item with image upload and optional metadata.
+
+**Request**:
+```
+POST /api/carousel/
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+
+FormData:
+- image: [required] Image file (JPG, PNG, GIF, WebP, max 5MB)
+- title: [optional] Carousel item title
+- link: [optional] Destination URL
+- sort_order: [optional] Display order (integer)
+```
+
+**Response**:
+```json
+{
+  "message": "Imagem adicionada ao carrossel!",
+  "item": {
+    "id": 3,
+    "image_url": "https://res.cloudinary.com/demo/image/upload/v123/craque-vision/carousel/newpromo.jpg",
+    "title": "New Promotion",
+    "link": "https://example.com/new-promotion",
+    "is_active": true,
+    "sort_order": 0,
+    "created_at": "2024-01-16T09:15:00Z"
+  }
+}
+```
+
+#### PUT /:id
+Updates carousel item properties including activation status and display order.
+
+**Request**:
+```
+PUT /api/carousel/3
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "Updated Promotion",
+  "link": "https://example.com/updated-promotion",
+  "is_active": true,
+  "sort_order": 5
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Item atualizado!",
+  "item": {
+    "id": 3,
+    "image_url": "https://res.cloudinary.com/demo/image/upload/v123/craque-vision/carousel/newpromo.jpg",
+    "title": "Updated Promotion",
+    "link": "https://example.com/updated-promotion",
+    "is_active": true,
+    "sort_order": 5,
+    "created_at": "2024-01-16T09:15:00Z"
+  }
+}
+```
+
+#### DELETE /:id
+Deletes a carousel item from the database.
+
+**Request**:
+```
+DELETE /api/carousel/3
+Authorization: Bearer <token>
+```
+
+**Response**:
+```json
+{
+  "message": "Imagem removida do carrossel."
+}
+```
+
+**Section sources**
+- [carousel.routes.js:36-103](file://backend/routes/carousel.routes.js#L36-L103)
+- [carousel.model.js:3-49](file://backend/models/carousel.model.js#L3-L49)
+
 ## Security and Authorization
 
 ### Role-Based Access Control
@@ -501,10 +697,20 @@ The database layer implements multiple security measures:
 - **Index Protection**: Optimized indexing for security and performance
 - **Connection Pooling**: Efficient resource management
 
+### Carousel Upload Security
+
+The carousel upload system implements comprehensive security measures:
+
+- **File Type Validation**: Only allows JPG, PNG, GIF, WebP formats
+- **Size Limiting**: Maximum 5MB file size restriction
+- **Cloud Storage**: Secure Cloudinary integration with HTTPS delivery
+- **Input Sanitization**: Proper parameter binding for database operations
+
 **Section sources**
 - [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
 - [auth.controller.js:4-6](file://backend/controllers/auth.controller.js#L4-L6)
 - [schema.sql:181-185](file://database/schema.sql#L181-L185)
+- [carousel.routes.js:10-19](file://backend/routes/carousel.routes.js#L10-L19)
 
 ## Administrative Workflows
 
@@ -559,6 +765,41 @@ API-->>Admin : Rejection confirmation
 **Diagram sources**
 - [admin.routes.js:10-11](file://backend/routes/admin.routes.js#L10-L11)
 - [admin.controller.js:78-110](file://backend/controllers/admin.controller.js#L78-L110)
+
+### Carousel Management Workflow
+
+```mermaid
+sequenceDiagram
+participant Admin as "Admin Manager"
+participant API as "Carousel API"
+participant Upload as "Cloudinary"
+participant Model as "Carousel Model"
+participant DB as "Database"
+Admin->>API : POST /carousel (FormData)
+API->>Upload : Validate & Upload Image
+Upload-->>API : Secure URL Generated
+API->>Model : createCarouselItem()
+Model->>DB : INSERT carousel item
+DB-->>Model : New record
+Model-->>API : Created item
+API-->>Admin : Upload confirmation
+Admin->>API : PUT /carousel/ : id (Update)
+API->>Model : updateCarouselItem()
+Model->>DB : UPDATE item properties
+DB-->>Model : Updated record
+Model-->>API : Updated item
+API-->>Admin : Update confirmation
+Admin->>API : DELETE /carousel/ : id
+API->>Model : deleteCarouselItem()
+Model->>DB : DELETE item
+DB-->>Model : Deletion confirmed
+Model-->>API : Success
+API-->>Admin : Deletion confirmation
+```
+
+**Diagram sources**
+- [carousel.routes.js:57-103](file://backend/routes/carousel.routes.js#L57-L103)
+- [carousel.model.js:18-48](file://backend/models/carousel.model.js#L18-L48)
 
 ### System Monitoring Workflow
 
@@ -673,6 +914,87 @@ The subscription management system provides comprehensive oversight of platform 
 - [admin.controller.js:63-76](file://backend/controllers/admin.controller.js#L63-L76)
 - [AdminDashboard.jsx:288-304](file://frontend/src/pages/AdminDashboard.jsx#L288-L304)
 
+## Carousel Management System
+
+### Carousel Architecture
+
+The carousel management system provides comprehensive promotional content management with the following architecture:
+
+```mermaid
+flowchart TD
+subgraph "Carousel Data Flow"
+A[Admin Upload Form] --> B[File Validation]
+B --> C[Cloudinary Upload]
+C --> D[Database Storage]
+D --> E[Active Display]
+end
+subgraph "Admin Interface"
+F[Carousel Tab] --> G[Upload Form]
+F --> H[Management Table]
+G --> I[Image Preview]
+H --> J[Activation Toggle]
+H --> K[Sort Order Control]
+H --> L[Delete Action]
+end
+subgraph "Public Display"
+M[Home Page] --> N[Carousel Component]
+N --> O[Active Items Only]
+O --> P[Auto Rotation]
+end
+```
+
+**Diagram sources**
+- [AdminDashboard.jsx:486-596](file://frontend/src/pages/AdminDashboard.jsx#L486-L596)
+- [carousel.routes.js:57-75](file://backend/routes/carousel.routes.js#L57-L75)
+- [carousel.model.js:4-16](file://backend/models/carousel.model.js#L4-L16)
+
+### Carousel Data Model
+
+The carousel system uses a structured data model optimized for promotional content management:
+
+#### Database Schema
+- **Primary Key**: Auto-incrementing ID for unique identification
+- **Image URL**: Cloudinary secure URL for CDN-delivered images
+- **Title**: Optional promotional headline (up to 255 characters)
+- **Link**: Optional destination URL for click-through functionality
+- **Activation Status**: Boolean flag controlling public visibility
+- **Sort Order**: Integer for display priority and ordering
+- **Timestamps**: Creation and update tracking
+
+#### File Upload Specifications
+- **Supported Formats**: JPG, PNG, GIF, WebP
+- **Maximum Size**: 5MB per image file
+- **Cloud Storage**: Automatic upload to Cloudinary with HTTPS delivery
+- **Optimization**: Automatic image optimization and responsive sizing
+
+### Administrative Interface
+
+The carousel management interface provides comprehensive administrative controls:
+
+#### Upload Interface
+- **Image Selection**: Drag-and-drop or file browser selection
+- **Metadata Entry**: Title and link input fields (optional)
+- **Preview Functionality**: Real-time image preview before upload
+- **Validation Feedback**: Immediate feedback on file type and size constraints
+
+#### Management Interface
+- **Image Gallery**: Thumbnail preview of all carousel items
+- **Activation Controls**: One-click enable/disable functionality
+- **Sort Order Management**: Numeric input for display priority
+- **Bulk Operations**: Confirmation dialogs for destructive actions
+
+#### Public Display Logic
+- **Active Filtering**: Automatic exclusion of inactive items
+- **Order Priority**: Sort by `sort_order` ascending, then creation date
+- **Responsive Design**: Adaptive sizing for different screen dimensions
+- **Performance Optimization**: Lazy loading and CDN delivery
+
+**Section sources**
+- [AdminDashboard.jsx:105-142](file://frontend/src/pages/AdminDashboard.jsx#L105-L142)
+- [carousel.routes.js:36-103](file://backend/routes/carousel.routes.js#L36-L103)
+- [carousel.model.js:3-49](file://backend/models/carousel.model.js#L3-L49)
+- [migrate.js:135-143](file://backend/migrate.js#L135-L143)
+
 ## Audit Trails and Permissions
 
 ### Administrative Permissions Matrix
@@ -686,6 +1008,11 @@ The subscription management system provides comprehensive oversight of platform 
 | `/admin/videos/:id/approve` | PUT | admin | Video approval |
 | `/admin/videos/:id/reject` | PUT | admin | Video rejection |
 | `/admin/subscriptions` | GET | admin | Subscription listing |
+| `/carousel/` | GET | public | Active carousel items |
+| `/carousel/admin` | GET | admin | All carousel items |
+| `/carousel/` | POST | admin | Add carousel item |
+| `/carousel/:id` | PUT | admin | Update carousel item |
+| `/carousel/:id` | DELETE | admin | Delete carousel item |
 
 ### Security Controls
 
@@ -706,8 +1033,15 @@ The administrative system implements multiple layers of security:
 - **Data Validation**: Input sanitization and validation
 - **Privacy Compliance**: User data protection and GDPR considerations
 
+#### Carousel Security
+- **File Validation**: Strict MIME type and size restrictions
+- **Cloud Security**: Secure Cloudinary integration with signed URLs
+- **Access Control**: Admin-only management interfaces
+- **Content Filtering**: Automatic sanitization of metadata fields
+
 **Section sources**
 - [admin.routes.js:6-12](file://backend/routes/admin.routes.js#L6-L12)
+- [carousel.routes.js:36-103](file://backend/routes/carousel.routes.js#L36-L103)
 - [auth.middleware.js:35-42](file://backend/middleware/auth.middleware.js#L35-L42)
 - [schema.sql:19](file://database/schema.sql#L19)
 
@@ -754,22 +1088,64 @@ The administrative system implements multiple layers of security:
 **Solution**: Ensure proper token synchronization and state management
 **Prevention**: Implement centralized authentication state management
 
+### Carousel Management Issues
+
+#### Image Upload Failures
+**Symptoms**: 400 Bad Request errors during carousel uploads
+**Common Causes**:
+- Invalid file format (must be JPG, PNG, GIF, WebP)
+- File too large (exceeds 5MB limit)
+- Missing required image field
+- Cloudinary upload failures
+
+**Solutions**:
+- Verify file format compatibility
+- Check file size limitations
+- Ensure FormData structure is correct
+- Monitor Cloudinary service status
+
+#### Activation Control Issues
+**Symptoms**: Activation toggle not working or reverting state
+**Solutions**:
+- Verify admin authentication
+- Check network connectivity for API calls
+- Ensure proper boolean value handling
+- Validate database connection
+
+#### Display Problems
+**Symptoms**: Carousel items not appearing or displaying incorrectly
+**Solutions**:
+- Verify `is_active` status is true
+- Check `sort_order` values for proper ordering
+- Validate Cloudinary image URLs
+- Test responsive design across devices
+
 **Section sources**
 - [auth.middleware.js:24-32](file://backend/middleware/auth.middleware.js#L24-L32)
 - [api.js:23-33](file://frontend/src/services/api.js#L23-L33)
+- [carousel.routes.js:10-19](file://backend/routes/carousel.routes.js#L10-L19)
 
 ## Conclusion
 
-The Administrative Dashboard and System Management features provide a comprehensive solution for platform administration and monitoring. The system successfully balances security, usability, and functionality through its layered architecture and robust security controls.
+The Administrative Dashboard and System Management features provide a comprehensive solution for platform administration and monitoring, now enhanced with robust carousel management capabilities. The system successfully balances security, usability, and functionality through its layered architecture and robust security controls.
 
 Key strengths of the administrative system include:
 
-- **Comprehensive Coverage**: Full suite of administrative capabilities from user management to content moderation
-- **Security First Design**: Multi-layered authentication and authorization system
+- **Comprehensive Coverage**: Full suite of administrative capabilities from user management to content moderation and promotional content management
+- **Security First Design**: Multi-layered authentication and authorization system with specialized carousel security measures
 - **Real-Time Monitoring**: Live dashboard with instant analytics and reporting
-- **Scalable Architecture**: Modular design supporting future expansion
+- **Scalable Architecture**: Modular design supporting future expansion including carousel management
 - **Developer-Friendly**: Clean API design with comprehensive documentation
+- **Cloud Integration**: Professional image hosting and CDN delivery through Cloudinary
+- **Responsive Design**: Mobile-friendly carousel interface with adaptive layouts
 
-The system provides administrators with the tools necessary to maintain platform quality, monitor user engagement, and ensure compliance with platform policies. The combination of automated analytics and manual intervention capabilities creates an effective governance framework for the Craque Vision platform.
+The system provides administrators with the tools necessary to maintain platform quality, monitor user engagement, manage promotional content effectively, and ensure compliance with platform policies. The combination of automated analytics, manual intervention capabilities, and professional carousel management creates an effective governance framework for the Craque Vision platform.
 
-Future enhancements could include expanded audit logging, advanced reporting capabilities, and integration with external monitoring systems. The current architecture provides a solid foundation for these potential improvements while maintaining the security and reliability standards essential for administrative operations.
+The enhanced carousel management system specifically addresses promotional content needs with:
+- **Professional Image Handling**: Cloud-based storage with automatic optimization
+- **Flexible Metadata Management**: Title and link support for contextual promotions
+- **Intuitive Administration**: Simple drag-and-drop upload interface
+- **Performance Optimization**: CDN delivery and lazy loading for fast page loads
+- **Activation Controls**: Granular control over promotional content visibility
+
+Future enhancements could include expanded carousel analytics, A/B testing capabilities for promotional content, advanced targeting options, and integration with external marketing platforms. The current architecture provides a solid foundation for these potential improvements while maintaining the security and reliability standards essential for administrative operations.

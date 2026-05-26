@@ -11,6 +11,8 @@
 - [club.routes.js](file://backend/routes/club.routes.js)
 - [admin.routes.js](file://backend/routes/admin.routes.js)
 - [payment.routes.js](file://backend/routes/payment.routes.js)
+- [carousel.routes.js](file://backend/routes/carousel.routes.js)
+- [upload.routes.js](file://backend/routes/upload.routes.js)
 - [auth.controller.js](file://backend/controllers/auth.controller.js)
 - [athlete.controller.js](file://backend/controllers/athlete.controller.js)
 - [video.controller.js](file://backend/controllers/video.controller.js)
@@ -18,6 +20,8 @@
 - [club.controller.js](file://backend/controllers/club.controller.js)
 - [admin.controller.js](file://backend/controllers/admin.controller.js)
 - [payment.controller.js](file://backend/controllers/payment.controller.js)
+- [carousel.model.js](file://backend/models/carousel.model.js)
+- [cloudinary.js](file://backend/config/cloudinary.js)
 </cite>
 
 ## Table of Contents
@@ -33,10 +37,10 @@
 10. [Appendices](#appendices)
 
 ## Introduction
-This document provides comprehensive API documentation for the Craque-Vision backend REST API. It covers all HTTP endpoints grouped by functional areas: authentication, athlete management, video operations, scout features, club subscriptions, payment processing, and administrative functions. For each endpoint, you will find HTTP methods, URL patterns, request/response schemas, authentication requirements, and error responses. It also documents the JWT-based authentication flow, role-based access control, and middleware architecture used by the backend.
+This document provides comprehensive API documentation for the Craque-Vision backend REST API. It covers all HTTP endpoints grouped by functional areas: authentication, athlete management, video operations, scout features, club subscriptions, payment processing, administrative functions, and carousel management. For each endpoint, you will find HTTP methods, URL patterns, request/response schemas, authentication requirements, and error responses. It also documents the JWT-based authentication flow, role-based access control, and middleware architecture used by the backend.
 
 ## Project Structure
-The backend is structured around Express.js routes, controllers, middleware, and models. The server mounts route groups under base paths to organize functionality by domain area. Middleware enforces authentication and authorization policies consistently across controllers.
+The backend is structured around Express.js routes, controllers, middleware, and models. The server mounts route groups under base paths to organize functionality by domain area. Middleware enforces authentication and authorization policies consistently across controllers. The carousel management feature introduces dedicated routes and models for managing promotional banners with Cloudinary integration.
 
 ```mermaid
 graph TB
@@ -47,6 +51,8 @@ Server --> ScoutRoutes["Scout Routes<br/>backend/routes/scout.routes.js"]
 Server --> ClubRoutes["Club Routes<br/>backend/routes/club.routes.js"]
 Server --> AdminRoutes["Admin Routes<br/>backend/routes/admin.routes.js"]
 Server --> PaymentRoutes["Payment Routes<br/>backend/routes/payment.routes.js"]
+Server --> CarouselRoutes["Carousel Routes<br/>backend/routes/carousel.routes.js"]
+Server --> UploadRoutes["Upload Routes<br/>backend/routes/upload.routes.js"]
 AuthRoutes --> AuthController["Auth Controller<br/>backend/controllers/auth.controller.js"]
 AthleteRoutes --> AthleteController["Athlete Controller<br/>backend/controllers/athlete.controller.js"]
 VideoRoutes --> VideoController["Video Controller<br/>backend/controllers/video.controller.js"]
@@ -54,17 +60,19 @@ ScoutRoutes --> ScoutController["Scout Controller<br/>backend/controllers/scout.
 ClubRoutes --> ClubController["Club Controller<br/>backend/controllers/club.controller.js"]
 AdminRoutes --> AdminController["Admin Controller<br/>backend/controllers/admin.controller.js"]
 PaymentRoutes --> PaymentController["Payment Controller<br/>backend/controllers/payment.controller.js"]
+CarouselRoutes --> CarouselModel["Carousel Model<br/>backend/models/carousel.model.js"]
+UploadRoutes --> CloudinaryConfig["Cloudinary Config<br/>backend/config/cloudinary.js"]
 AuthController --> AuthMiddleware["Auth Middleware<br/>backend/middleware/auth.middleware.js"]
 AthleteController --> AuthMiddleware
 VideoController --> AuthMiddleware
 ScoutController --> AuthMiddleware
 ClubController --> AuthMiddleware
 AdminController --> AuthMiddleware
-PaymentController --> AuthMiddleware
+CarouselRoutes --> AuthMiddleware
 ```
 
 **Diagram sources**
-- [server.js:1-40](file://backend/server.js#L1-L40)
+- [server.js:1-68](file://backend/server.js#L1-L68)
 - [auth.routes.js:1-11](file://backend/routes/auth.routes.js#L1-L11)
 - [athlete.routes.js:1-14](file://backend/routes/athlete.routes.js#L1-L14)
 - [video.routes.js:1-20](file://backend/routes/video.routes.js#L1-L20)
@@ -72,6 +80,8 @@ PaymentController --> AuthMiddleware
 - [club.routes.js:1-13](file://backend/routes/club.routes.js#L1-L13)
 - [admin.routes.js:1-15](file://backend/routes/admin.routes.js#L1-L15)
 - [payment.routes.js:1-13](file://backend/routes/payment.routes.js#L1-L13)
+- [carousel.routes.js:1-106](file://backend/routes/carousel.routes.js#L1-L106)
+- [upload.routes.js:1-131](file://backend/routes/upload.routes.js#L1-L131)
 - [auth.controller.js:1-72](file://backend/controllers/auth.controller.js#L1-L72)
 - [athlete.controller.js:1-91](file://backend/controllers/athlete.controller.js#L1-L91)
 - [video.controller.js:1-111](file://backend/controllers/video.controller.js#L1-L111)
@@ -79,10 +89,12 @@ PaymentController --> AuthMiddleware
 - [club.controller.js:1-100](file://backend/controllers/club.controller.js#L1-L100)
 - [admin.controller.js:1-121](file://backend/controllers/admin.controller.js#L1-L121)
 - [payment.controller.js:1-108](file://backend/controllers/payment.controller.js#L1-L108)
+- [carousel.model.js:1-52](file://backend/models/carousel.model.js#L1-L52)
+- [cloudinary.js:1-16](file://backend/config/cloudinary.js#L1-L16)
 - [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
 
 **Section sources**
-- [server.js:1-40](file://backend/server.js#L1-L40)
+- [server.js:1-68](file://backend/server.js#L1-L68)
 
 ## Core Components
 - Authentication and Authorization Middleware
@@ -91,6 +103,10 @@ PaymentController --> AuthMiddleware
   - optionalAuth: Allows request to proceed even if token is missing/expired; useful for public endpoints.
 - Controllers implement business logic and interact with models and database queries.
 - Routes define endpoint URLs and apply middleware guards.
+- Carousel Management System
+  - Cloudinary integration for image uploads with memory storage and validation.
+  - Admin-only CRUD operations for carousel items with active/inactive state management.
+  - Public endpoint for retrieving active carousel images with sorting support.
 
 Key middleware behaviors:
 - Token extraction and verification errors return 401 with specific messages.
@@ -107,6 +123,7 @@ The API follows a layered architecture:
 - Security: Global middleware applies authentication and authorization.
 - Business logic: Controllers orchestrate model interactions and database queries.
 - Data access: Models encapsulate persistence logic; admin endpoints use raw SQL via a connection pool.
+- Media handling: Cloudinary integration for image and video uploads with memory storage optimization.
 
 ```mermaid
 sequenceDiagram
@@ -115,12 +132,17 @@ participant Server as "Express Server"
 participant AuthMW as "Auth Middleware"
 participant Route as "Route Handler"
 participant Ctrl as "Controller"
+participant Cloud as "Cloudinary"
 participant DB as "Database"
 Client->>Server : "HTTP Request"
 Server->>AuthMW : "Apply authenticate/authorize"
 AuthMW-->>Server : "Attach user info or deny"
 Server->>Route : "Dispatch to route handler"
 Route->>Ctrl : "Invoke controller method"
+alt Cloudinary Upload
+Ctrl->>Cloud : "Upload buffer to Cloudinary"
+Cloud-->>Ctrl : "Return secure URL"
+end
 Ctrl->>DB : "Execute queries/models"
 DB-->>Ctrl : "Return results"
 Ctrl-->>Route : "Response payload"
@@ -128,10 +150,12 @@ Route-->>Client : "HTTP Response"
 ```
 
 **Diagram sources**
-- [server.js:1-40](file://backend/server.js#L1-L40)
+- [server.js:1-68](file://backend/server.js#L1-L68)
 - [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
 - [auth.controller.js:1-72](file://backend/controllers/auth.controller.js#L1-L72)
 - [admin.controller.js:1-121](file://backend/controllers/admin.controller.js#L1-L121)
+- [carousel.routes.js:21-34](file://backend/routes/carousel.routes.js#L21-L34)
+- [upload.routes.js:26-39](file://backend/routes/upload.routes.js#L26-L39)
 
 ## Detailed Component Analysis
 
@@ -174,12 +198,12 @@ Endpoints
   - Response: Created athlete profile.
   - Errors: 400 if profile already exists; 404 if user has no profile; 500 on server error.
 - GET /api/athletes/profile
-  - Description: Retrieves authenticated athlete’s profile.
+  - Description: Retrieves authenticated athlete's profile.
   - Authentication: Required; Role: athlete.
   - Response: Athlete profile.
   - Errors: 404 if profile not found; 500 on server error.
 - PUT /api/athletes/profile
-  - Description: Updates authenticated athlete’s profile.
+  - Description: Updates authenticated athlete's profile.
   - Authentication: Required; Role: athlete.
   - Response: Updated athlete profile.
   - Errors: 404 if profile not found; 500 on server error.
@@ -293,7 +317,7 @@ Endpoints
   - Response: Favorite record.
   - Errors: 403 if no active subscription; 400 if already favorited; 500 on server error.
 - GET /api/scout/favorites
-  - Description: Lists authenticated user’s favorite athletes.
+  - Description: Lists authenticated user's favorite athletes.
   - Authentication: Required; Role: scout or club.
   - Response: Favorites list.
   - Errors: 500 on server error.
@@ -324,7 +348,7 @@ Endpoints
   - Response: Subscription object.
   - Errors: 400 if plan invalid; 500 on server error.
 - GET /api/clubs/subscription
-  - Description: Returns authenticated user’s subscription with active status and plan details.
+  - Description: Returns authenticated user's subscription with active status and plan details.
   - Authentication: Required.
   - Response: Subscription with computed is_active and plan_details.
   - Errors: 404 if no subscription; 500 on server error.
@@ -381,6 +405,85 @@ Mock Payments
 - [payment.routes.js:1-13](file://backend/routes/payment.routes.js#L1-L13)
 - [payment.controller.js:1-108](file://backend/controllers/payment.controller.js#L1-L108)
 
+### Carousel Management
+**New Feature** Enhanced with carousel management API endpoints including authentication middleware and Cloudinary integration.
+
+Endpoints
+- GET /api/carousel/
+  - Description: Public endpoint to retrieve all active carousel images.
+  - Authentication: Not required.
+  - Response: Array of carousel items with image_url, title, link, sort_order.
+  - Errors: 500 on server error.
+- GET /api/carousel/admin
+  - Description: Admin endpoint to retrieve all carousel items (active and inactive).
+  - Authentication: Required; Role: admin.
+  - Response: Array of all carousel items ordered by sort_order and created_at.
+  - Errors: 500 on server error.
+- POST /api/carousel/
+  - Description: Admin endpoint to add a new carousel image.
+  - Authentication: Required; Role: admin.
+  - Request body: image (multipart/form-data), title (optional), link (optional), sort_order (optional).
+  - Response: Success message and created carousel item.
+  - Errors: 400 if file validation fails or no image provided; 500 on server error.
+- PUT /api/carousel/:id
+  - Description: Admin endpoint to update carousel item properties.
+  - Authentication: Required; Role: admin.
+  - Request body: title (optional), link (optional), is_active (boolean), sort_order (optional).
+  - Response: Success message and updated carousel item.
+  - Errors: 404 if item not found; 500 on server error.
+- DELETE /api/carousel/:id
+  - Description: Admin endpoint to remove a carousel image.
+  - Authentication: Required; Role: admin.
+  - Response: Success message.
+  - Errors: 500 on server error.
+
+Cloudinary Integration
+- Memory-based upload using multer.memoryStorage() for efficient buffer handling.
+- File validation restricts uploads to JPG, PNG, GIF, and WebP formats with 5MB size limit.
+- Automatic upload to Cloudinary with folder structure: craque-vision/carousel.
+- Secure URLs returned for immediate use in carousel displays.
+
+Database Schema
+- Carousel table with columns: id, image_url, title, link, is_active (default true), sort_order (default 0), created_at, updated_at.
+- Active items filtered by is_active = true for public endpoint.
+- Sorting prioritizes sort_order ascending, then created_at descending.
+
+**Section sources**
+- [carousel.routes.js:1-106](file://backend/routes/carousel.routes.js#L1-L106)
+- [carousel.model.js:1-52](file://backend/models/carousel.model.js#L1-L52)
+
+### Media Upload System
+**Updated** Enhanced with Cloudinary integration for various media types.
+
+Endpoints
+- POST /api/upload/avatar
+  - Description: Uploads user avatar with Cloudinary integration.
+  - Authentication: Required.
+  - Request body: avatar (multipart/form-data, max 5MB).
+  - Response: Success message, avatar_url, and updated user object.
+  - Errors: 400 if file too large or no image; 500 on Cloudinary error.
+- POST /api/upload/video
+  - Description: Uploads video content with Cloudinary integration.
+  - Authentication: Required; Role: athlete.
+  - Request body: video (multipart/form-data, max 200MB).
+  - Response: Success message, video_url, filename, and size.
+  - Errors: 400 if file too large or no video; 500 on Cloudinary error.
+- POST /api/upload/thumbnail
+  - Description: Uploads thumbnail image with Cloudinary integration.
+  - Authentication: Required; Role: athlete.
+  - Request body: thumbnail (multipart/form-data, max 5MB).
+  - Response: Success message, thumbnail_url, and filename.
+  - Errors: 400 if file too large or no image; 500 on Cloudinary error.
+
+Cloudinary Configuration
+- Supports both CLOUDINARY_URL environment variable and individual cloud_name, api_key, api_secret.
+- Automatic resource type detection for different media types.
+- Secure URL generation for production use.
+
+**Section sources**
+- [upload.routes.js:1-131](file://backend/routes/upload.routes.js#L1-L131)
+- [cloudinary.js:1-16](file://backend/config/cloudinary.js#L1-L16)
+
 ### Administrative Functions
 Endpoints
 - GET /api/admin/stats
@@ -430,6 +533,8 @@ The API depends on:
 - JSON Web Token for authentication.
 - Environment variables for secrets and configuration.
 - Database models and a connection pool for admin queries.
+- Cloudinary SDK for media upload functionality.
+- Multer for memory-based file processing.
 
 ```mermaid
 graph LR
@@ -437,24 +542,30 @@ Express["Express App<br/>backend/server.js"] --> Routes["Route Modules"]
 Routes --> Controllers["Controller Modules"]
 Controllers --> Models["Model Modules"]
 Controllers --> Pool["Database Pool<br/>admin controller"]
+Controllers --> Cloudinary["Cloudinary SDK<br/>media uploads"]
 Middleware["Auth Middleware<br/>backend/middleware/auth.middleware.js"] --> Controllers
+CloudinaryConfig["Cloudinary Config<br/>backend/config/cloudinary.js"] --> Cloudinary
 ```
 
 **Diagram sources**
-- [server.js:1-40](file://backend/server.js#L1-L40)
+- [server.js:1-68](file://backend/server.js#L1-L68)
 - [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
 - [admin.controller.js:1-121](file://backend/controllers/admin.controller.js#L1-L121)
+- [cloudinary.js:1-16](file://backend/config/cloudinary.js#L1-L16)
 
 **Section sources**
-- [server.js:1-40](file://backend/server.js#L1-L40)
+- [server.js:1-68](file://backend/server.js#L1-L68)
 - [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
 - [admin.controller.js:1-121](file://backend/controllers/admin.controller.js#L1-L121)
+- [cloudinary.js:1-16](file://backend/config/cloudinary.js#L1-L16)
 
 ## Performance Considerations
 - Token verification occurs on every protected request; keep JWT_SECRET secure and avoid excessive token lifetimes.
 - Public endpoints should minimize heavy computations; leverage caching where appropriate.
 - Batch operations (e.g., listing videos, users) should consider pagination and limits to reduce payload sizes.
 - Admin endpoints perform multiple concurrent queries; ensure database connection pooling is tuned for expected load.
+- Cloudinary uploads use memory storage to optimize performance; ensure adequate memory allocation for large files.
+- Carousel images are cached by Cloudinary; consider implementing client-side caching for improved performance.
 
 ## Troubleshooting Guide
 Common Issues and Resolutions
@@ -465,20 +576,25 @@ Common Issues and Resolutions
   - Cause: Insufficient permissions or missing active subscription for scout features.
   - Resolution: Verify user role and subscription status; ensure required plan is active.
 - 404 Not Found
-  - Cause: Resource does not exist (e.g., user, athlete, video).
+  - Cause: Resource does not exist (e.g., user, athlete, video, carousel item).
   - Resolution: Validate IDs and ensure resources are created before access.
 - 400 Bad Request
-  - Cause: Invalid input (e.g., invalid plan or package).
-  - Resolution: Confirm request payload matches allowed values.
+  - Cause: Invalid input (e.g., invalid plan or package, file format issues).
+  - Resolution: Confirm request payload matches allowed values and file constraints.
+- Cloudinary Upload Failures
+  - Cause: Network issues, invalid credentials, or file size/format restrictions.
+  - Resolution: Verify Cloudinary configuration, check file size limits (5MB for images, 200MB for videos), and ensure proper file formats.
 
 **Section sources**
 - [auth.middleware.js:1-59](file://backend/middleware/auth.middleware.js#L1-L59)
 - [scout.controller.js:1-96](file://backend/controllers/scout.controller.js#L1-L96)
 - [club.controller.js:1-100](file://backend/controllers/club.controller.js#L1-L100)
 - [payment.controller.js:1-108](file://backend/controllers/payment.controller.js#L1-L108)
+- [carousel.routes.js:10-19](file://backend/routes/carousel.routes.js#L10-L19)
+- [upload.routes.js:14-23](file://backend/routes/upload.routes.js#L14-L23)
 
 ## Conclusion
-The Craque-Vision backend provides a well-organized REST API with clear separation of concerns, robust authentication and authorization, and comprehensive coverage of athlete, video, scout, subscription, payment, and administrative workflows. By following the documented endpoints, authentication flow, and access control rules, frontend applications can integrate seamlessly with the backend.
+The Craque-Vision backend provides a well-organized REST API with clear separation of concerns, robust authentication and authorization, and comprehensive coverage of athlete, video, scout, subscription, payment, administrative, and carousel management workflows. The addition of carousel management with Cloudinary integration enhances the platform's promotional capabilities while maintaining security through role-based access control. By following the documented endpoints, authentication flow, and access control rules, frontend applications can integrate seamlessly with the backend.
 
 ## Appendices
 
@@ -500,6 +616,8 @@ The Craque-Vision backend provides a well-organized REST API with clear separati
 - Scout: search, detail, favorites CRUD
 - Clubs: plans, subscribe, subscription status, access check, dashboard
 - Payments: packages, plans, initiate video/subscription payments, confirm
+- Carousel: list active, list all (admin), create, update, delete
+- Upload: avatar, video, thumbnail (Cloudinary)
 - Admin: stats, users, videos, subscriptions, approve/reject video, delete user
 
 **Section sources**
@@ -509,4 +627,6 @@ The Craque-Vision backend provides a well-organized REST API with clear separati
 - [scout.routes.js:1-13](file://backend/routes/scout.routes.js#L1-L13)
 - [club.routes.js:1-13](file://backend/routes/club.routes.js#L1-L13)
 - [payment.routes.js:1-13](file://backend/routes/payment.routes.js#L1-L13)
+- [carousel.routes.js:1-106](file://backend/routes/carousel.routes.js#L1-L106)
+- [upload.routes.js:1-131](file://backend/routes/upload.routes.js#L1-L131)
 - [admin.routes.js:1-15](file://backend/routes/admin.routes.js#L1-L15)
