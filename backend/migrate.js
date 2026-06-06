@@ -4,17 +4,32 @@ const bcrypt = require('bcryptjs');
 async function migrate() {
   console.log('🔧 Verificando tabelas...');
 
-  // Verifica se a tabela users tem id como PRIMARY KEY
+  // Verifica se a tabela users está íntegra (PK + colunas essenciais)
   let needsReset = false;
   try {
-    const check = await pool.query(
+    // 1) Verifica PRIMARY KEY no id
+    const pkCheck = await pool.query(
       `SELECT kcu.column_name 
        FROM information_schema.table_constraints tc
        JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
        WHERE tc.table_name = 'users' AND tc.constraint_type = 'PRIMARY KEY' AND kcu.column_name = 'id'`
     );
-    // users existe mas id NÃO é primary key → schema corrompido
-    if (check.rows.length === 0) needsReset = true;
+    if (pkCheck.rows.length === 0) {
+      needsReset = true;
+    }
+
+    // 2) Verifica se colunas essenciais existem
+    if (!needsReset) {
+      const requiredColumns = ['id', 'name', 'email', 'password', 'user_type', 'avatar'];
+      const colCheck = await pool.query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name = ANY($1)`,
+        [requiredColumns]
+      );
+      if (colCheck.rows.length < requiredColumns.length) {
+        console.log(`⚠️ users: faltam ${requiredColumns.length - colCheck.rows.length} coluna(s) essenciais`);
+        needsReset = true;
+      }
+    }
   } catch (e) {
     // users não existe → vai criar normalmente
   }
@@ -22,6 +37,7 @@ async function migrate() {
   // Se o schema estiver corrompido, recria tudo (banco vazio no Render)
   if (needsReset) {
     console.log('⚠️ Schema corrompido detectado, recriando tabelas...');
+    await pool.query('DROP TABLE IF EXISTS carousel CASCADE');
     await pool.query('DROP TABLE IF EXISTS likes CASCADE');
     await pool.query('DROP TABLE IF EXISTS favorites CASCADE');
     await pool.query('DROP TABLE IF EXISTS payments CASCADE');
