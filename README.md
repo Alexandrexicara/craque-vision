@@ -2,6 +2,33 @@
 
 Plataforma multiesportiva de descoberta de talentos. Conectando atletas, clubes e olheiros.
 
+## Descoberta por mecanismos de IA (MCP)
+
+A Craque Vision disponibiliza um endpoint público compatível com JSON-RPC do Model Context Protocol (MCP), para que assistentes de IA possam consultar informações da plataforma e pesquisar perfis públicos de atletas.
+
+- **Endpoint MCP:** https://craque-vision.onrender.com/mcp
+- **Informações para assistentes:** https://craque-vision.onrender.com/llms.txt
+- **Sitemap:** https://craque-vision.onrender.com/sitemap.xml
+- **Robots:** https://craque-vision.onrender.com/robots.txt
+
+### Ferramentas MCP
+
+- `craque_vision_status`: status e indicadores públicos agregados.
+- `craque_vision_search`: busca pública de atletas por texto, modalidade, posição, categoria e estado.
+- `craque_vision_how_it_works`: explica os fluxos para atletas, olheiros/scouts e clubes.
+
+### Termos de descoberta
+
+O catálogo de descoberta inclui mais de 150 termos e sinônimos em português, inglês e espanhol, organizados em temas como futebol, futsal, basquete, vôlei, tênis, natação, MMA, outras modalidades, scouting, olheiros, clubes, recrutamento, peneiras, categorias de base, posições, vídeos, highlights e perfis de atletas.
+
+O endpoint de busca retorna somente campos públicos do perfil. Não expõe e-mail, telefone, WhatsApp, credenciais ou informações privadas. Acesso a vídeos e recursos protegidos continua sujeito às regras de autenticação e assinatura da plataforma.
+
+### Conectar em um cliente MCP
+
+Use a URL `https://craque-vision.onrender.com/mcp` em clientes que aceitam servidores MCP remotos via HTTP. O serviço responde a `initialize`, `tools/list` e `tools/call`.
+
+A presença do endpoint não significa integração automática com todos os assistentes: cada plataforma precisa aceitar e conectar servidores MCP.
+
 ## Funcionalidades
 
 - **Cadastro de Atletas**: Crie seu perfil profissional
@@ -66,68 +93,14 @@ npm run dev
 craque-vision/
 ├── backend/
 │   ├── config/
-│   │   └── database.js
 │   ├── controllers/
-│   │   ├── auth.controller.js
-│   │   ├── athlete.controller.js
-│   │   ├── video.controller.js
-│   │   ├── scout.controller.js
-│   │   ├── club.controller.js
-│   │   ├── admin.controller.js
-│   │   ├── like.controller.js
-│   │   └── payment.controller.js
 │   ├── middleware/
-│   │   └── auth.middleware.js
 │   ├── models/
-│   │   ├── user.model.js
-│   │   ├── athlete.model.js
-│   │   ├── video.model.js
-│   │   ├── subscription.model.js
-│   │   ├── favorite.model.js
-│   │   └── like.model.js
 │   ├── routes/
-│   │   ├── auth.routes.js
-│   │   ├── athlete.routes.js
-│   │   ├── video.routes.js
-│   │   ├── scout.routes.js
-│   │   ├── club.routes.js
-│   │   ├── admin.routes.js
-│   │   └── payment.routes.js
-│   ├── server.js
-│   └── package.json
+│   ├── mcp.js
+│   └── server.js
 ├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Navbar.jsx
-│   │   │   ├── Footer.jsx
-│   │   │   ├── PrivateRoute.jsx
-│   │   │   ├── VideoCard.jsx
-│   │   │   └── AthleteCard.jsx
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx
-│   │   ├── pages/
-│   │   │   ├── Home.jsx
-│   │   │   ├── Login.jsx
-│   │   │   ├── Register.jsx
-│   │   │   ├── AthleteDashboard.jsx
-│   │   │   ├── AthleteProfile.jsx
-│   │   │   ├── UploadVideo.jsx
-│   │   │   ├── SearchAthletes.jsx
-│   │   │   ├── ScoutDashboard.jsx
-│   │   │   ├── ClubPlans.jsx
-│   │   │   └── AdminDashboard.jsx
-│   │   ├── services/
-│   │   │   └── api.js
-│   │   ├── App.jsx
-│   │   ├── main.jsx
-│   │   └── index.css
-│   ├── index.html
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── tailwind.config.js
-│   └── postcss.config.js
-├── database/
-│   └── schema.sql
+│   └── src/
 └── README.md
 ```
 
@@ -166,8 +139,6 @@ craque-vision/
 - `GET /api/admin/stats` - Estatísticas
 - `GET /api/admin/users` - Listar usuários
 - `GET /api/admin/videos` - Listar vídeos
-- `PUT /api/admin/videos/:id/approve` - Aprovar vídeo
-- `PUT /api/admin/videos/:id/reject` - Rejeitar vídeo
 
 ## Licença
 
