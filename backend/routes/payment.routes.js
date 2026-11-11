@@ -29,6 +29,12 @@ const upload = multer({
   }
 });
 
+const sumupController = require('../controllers/sumup.controller');
+
+router.post('/sumup/webhook', sumupController.sumupWebhook);
+router.get('/subscription/sumup/status', authenticate, sumupController.sumupStatus);
+router.post('/subscription/sumup', authenticate, sumupController.createSumupCheckout);
+
 router.get('/subscription-plans', paymentController.getSubscriptionPlans);
 router.get('/pix-info', paymentController.getPixInfo);
 router.post('/subscription', authenticate, paymentController.createSubscriptionPayment);
