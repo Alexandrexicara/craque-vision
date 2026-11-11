@@ -31,6 +31,7 @@ const upload = multer({
 
 const sumupController = require('../controllers/sumup.controller');
 
+router.get('/sumup/health', sumupController.sumupHealth);
 router.post('/sumup/webhook', sumupController.sumupWebhook);
 router.get('/subscription/sumup/status', authenticate, sumupController.sumupStatus);
 router.post('/subscription/sumup', authenticate, sumupController.createSumupCheckout);
