@@ -31,6 +31,7 @@ const SubscriptionPayment = () => {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [sumupLoading, setSumupLoading] = useState(false);
 
   const PIX_KEY = 'santossilvac990@gmail.com';
   const PIX_BANK = 'PagBank';
@@ -45,6 +46,33 @@ const SubscriptionPayment = () => {
       return;
     }
     checkExistingSubscription();
+    if (searchParams.get('sumup') === 'return') {
+      let attempts = 0;
+      const verify = async () => {
+        attempts += 1;
+        try {
+          const result = await api.get('/payments/subscription/sumup/status');
+          if (result.data.subscription) setSubscription(result.data.subscription);
+          if (result.data.subscription?.status === 'active') {
+            setSuccess('Pagamento confirmado pela SumUp! Sua assinatura está ativa.');
+            return true;
+          }
+        } catch (err) {
+          setError(err.response?.data?.error || 'Não foi possível consultar a confirmação do pagamento.');
+        }
+        return attempts >= 12;
+      };
+      let timer;
+      verify().then(done => {
+        if (!done) {
+          timer = setInterval(async () => {
+            const finished = await verify();
+            if (finished && timer) clearInterval(timer);
+          }, 5000);
+        }
+      });
+      return () => { if (timer) clearInterval(timer); };
+    }
   }, []);
 
   const checkExistingSubscription = async () => {
@@ -66,6 +94,19 @@ const SubscriptionPayment = () => {
       setSuccess('Assinatura criada! Agora envie o comprovante PIX abaixo.');
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao criar assinatura.');
+    }
+  };
+
+  const handleSumupPayment = async () => {
+    try {
+      setSumupLoading(true);
+      setError('');
+      const res = await api.post('/payments/subscription/sumup', { plan_name: planKey });
+      if (!res.data.checkout_url) throw new Error('A SumUp não retornou o link de pagamento.');
+      window.location.assign(res.data.checkout_url);
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || 'Não foi possível iniciar o pagamento com cartão.');
+      setSumupLoading(false);
     }
   };
 
@@ -211,16 +252,31 @@ const SubscriptionPayment = () => {
             <p className="text-gray-400 mb-4">
               Clique no botão abaixo para gerar sua assinatura e depois enviar o comprovante PIX.
             </p>
-            <button onClick={handleCreateSubscription} className="btn-primary">
-              Gerar Assinatura
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button onClick={handleCreateSubscription} className="btn-secondary">
+                Continuar com PIX manual
+              </button>
+              <button onClick={handleSumupPayment} disabled={sumupLoading} className="btn-primary disabled:opacity-50">
+                <CreditCard className="w-4 h-4 inline mr-2" />
+                {sumupLoading ? 'Conectando à SumUp...' : 'Pagar com cartão SumUp'}
+              </button>
+            </div>
           </div>
         )}
 
         {/* PIX + Upload (se pendente ou sem comprovante) */}
         {subscription && !isActive && !isPendingApproval && !isRejected && (
           <>
-            {/* Dados PIX */}
+            <div className="card p-5 mb-6">
+              <h3 className="text-lg font-bold text-white mb-2">Também pode pagar com cartão</h3>
+              <p className="text-gray-400 text-sm mb-4">O pagamento é processado pela SumUp. A assinatura será liberada somente após a confirmação do pagamento.</p>
+              <button onClick={handleSumupPayment} disabled={sumupLoading} className="btn-primary w-full disabled:opacity-50">
+                <CreditCard className="w-4 h-4 inline mr-2" />
+                {sumupLoading ? 'Conectando à SumUp...' : 'Pagar com cartão SumUp'}
+              </button>
+            </div>
+
+            {/* Dados PIX manual - permanece disponível */}
             <div className="card p-6 mb-6">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-accent" />
