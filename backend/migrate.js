@@ -4,48 +4,8 @@ const bcrypt = require('bcryptjs');
 async function migrate() {
   console.log('🔧 Verificando tabelas...');
 
-  // Verifica se a tabela users está íntegra (PK + colunas essenciais)
-  let needsReset = false;
-  try {
-    // 1) Verifica PRIMARY KEY no id
-    const pkCheck = await pool.query(
-      `SELECT kcu.column_name 
-       FROM information_schema.table_constraints tc
-       JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
-       WHERE tc.table_name = 'users' AND tc.constraint_type = 'PRIMARY KEY' AND kcu.column_name = 'id'`
-    );
-    if (pkCheck.rows.length === 0) {
-      needsReset = true;
-    }
-
-    // 2) Verifica se colunas essenciais existem
-    if (!needsReset) {
-      const requiredColumns = ['id', 'name', 'email', 'password', 'user_type', 'avatar'];
-      const colCheck = await pool.query(
-        `SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name = ANY($1)`,
-        [requiredColumns]
-      );
-      if (colCheck.rows.length < requiredColumns.length) {
-        console.log(`⚠️ users: faltam ${requiredColumns.length - colCheck.rows.length} coluna(s) essenciais`);
-        needsReset = true;
-      }
-    }
-  } catch (e) {
-    // users não existe → vai criar normalmente
-  }
-
-  // Se o schema estiver corrompido, recria tudo (banco vazio no Render)
-  if (needsReset) {
-    console.log('⚠️ Schema corrompido detectado, recriando tabelas...');
-    await pool.query('DROP TABLE IF EXISTS carousel CASCADE');
-    await pool.query('DROP TABLE IF EXISTS likes CASCADE');
-    await pool.query('DROP TABLE IF EXISTS favorites CASCADE');
-    await pool.query('DROP TABLE IF EXISTS payments CASCADE');
-    await pool.query('DROP TABLE IF EXISTS subscriptions CASCADE');
-    await pool.query('DROP TABLE IF EXISTS videos CASCADE');
-    await pool.query('DROP TABLE IF EXISTS athletes CASCADE');
-    await pool.query('DROP TABLE IF EXISTS users CASCADE');
-  }
+  // Migração não destrutiva: nunca remover tabelas ou registros automaticamente.
+  // As tabelas ausentes são criadas abaixo com IF NOT EXISTS.
 
   const tables = [
     `CREATE TABLE IF NOT EXISTS users (
