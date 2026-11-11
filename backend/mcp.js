@@ -133,6 +133,11 @@ async function callTool(name, args = {}) {
 }
 
 router.get('/mcp', (req, res) => {
+  res.set('Allow', 'POST');
+  return res.status(405).json({ error: 'MCP Streamable HTTP aceita mensagens JSON-RPC por POST neste endpoint.' });
+});
+
+router.get('/mcp/info', (req, res) => {
   res.json({
     name: 'craque-vision-mcp',
     description: 'MCP público para descoberta de atletas e scouting esportivo na Craque Vision.',
