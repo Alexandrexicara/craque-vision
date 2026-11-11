@@ -53,15 +53,17 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT || 10000);
 
-// Executa migração automática das tabelas (idempotente)
-migrate().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+// Abre a porta imediatamente para o Render detectar o serviço.
+// A migração ocorre depois, sem encerrar o servidor se o banco estiver indisponível.
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
+
+  migrate().then(() => {
+    console.log('✅ Banco de dados preparado');
     startScheduler();
+  }).catch(err => {
+    console.error('❌ Erro na migração do banco:', err.message);
   });
-}).catch(err => {
-  console.error('❌ Erro na migração:', err.message);
-  process.exit(1);
 });
