@@ -124,15 +124,21 @@ async function migrate() {
   }
   console.log('✅ Tabelas verificadas/criadas');
 
-  // Cria admin padrão se não existir
-  const adminExists = await pool.query("SELECT id FROM users WHERE email = 'admin@celio.com'");
-  if (adminExists.rows.length === 0) {
-    const hash = bcrypt.hashSync('celio48', 10);
-    await pool.query(
-      "INSERT INTO users (name, email, password, user_type) VALUES ($1, $2, $3, $4)",
-      ['Administrador', 'admin@celio.com', hash, 'admin']
+  // Cria administrador somente quando as credenciais forem definidas no ambiente.
+  // Nunca registrar senha ou credenciais nos logs.
+  if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+    const adminExists = await pool.query(
+      'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
+      [process.env.ADMIN_EMAIL]
     );
-    console.log('👤 Admin criado: admin@celio.com / celio48');
+    if (adminExists.rows.length === 0) {
+      const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 12);
+      await pool.query(
+        'INSERT INTO users (name, email, password, user_type) VALUES ($1, $2, $3, $4)',
+        ['Administrador', process.env.ADMIN_EMAIL, hash, 'admin']
+      );
+      console.log('👤 Administrador inicial criado com credenciais do ambiente');
+    }
   }
 }
 
