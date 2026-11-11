@@ -37,7 +37,7 @@ app.use('/api/carousel', carouselRoutes);
 app.use(mcpRoutes);
 
 app.get('/robots.txt', (req, res) => {
-  res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /mcp\nSitemap: https://craque-vision.onrender.com/sitemap.xml\n');
+  res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nSitemap: https://craque-vision.onrender.com/sitemap.xml\n');
 });
 app.get('/sitemap.xml', (req, res) => {
   const urls = ['', '/buscar', '/planos', '/register'];
