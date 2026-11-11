@@ -125,7 +125,7 @@ async function migrate() {
   console.log('✅ Tabelas verificadas/criadas');
   await pool.query('ALTER TABLE payments ADD COLUMN IF NOT EXISTS external_reference VARCHAR(255)');
   await pool.query('ALTER TABLE payments ADD COLUMN IF NOT EXISTS merchant_code VARCHAR(100)');
-  await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS payments_external_payment_id_unique ON payments(external_payment_id) WHERE external_payment_id IS NOT NULL');
+  await pool.query('CREATE INDEX IF NOT EXISTS payments_external_payment_id_idx ON payments(external_payment_id) WHERE external_payment_id IS NOT NULL');
 
   // Cria ou atualiza a senha administrativa somente com segredo configurado no Render.
   // Nunca registrar senha ou credenciais nos logs.
