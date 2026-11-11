@@ -32,8 +32,16 @@ async function getMerchantCode() {
   const configured = String(process.env.SUMUP_MERCHANT_CODE || '').trim();
   if (configured) return configured;
   const profile = await sumup('/v0.1/me');
-  const code = profile.merchant_code || profile.merchantCode ||
-    profile.merchant_profile?.merchant_code || profile.merchant_profile?.merchantCode;
+  const findCode = (value, depth = 0) => {
+    if (!value || typeof value !== 'object' || depth > 5) return null;
+    for (const [key, item] of Object.entries(value)) {
+      if (key.toLowerCase() === 'merchant_code' && typeof item === 'string' && item.trim()) return item.trim();
+      const nested = findCode(item, depth + 1);
+      if (nested) return nested;
+    }
+    return null;
+  };
+  const code = findCode(profile);
   if (!code) {
     const error = new Error('A chave SumUp foi aceita, mas o código do estabelecimento não veio no perfil /v0.1/me. Configure SUMUP_MERCHANT_CODE no Render.');
     error.status = 503;
@@ -99,6 +107,7 @@ exports.createSumupCheckout = async (req, res) => {
         currency: plan.currency,
         merchant_code: merchantCode,
         description: 'Craque Vision - ' + plan.name,
+        return_url: appUrl() + '/api/payments/sumup/webhook',
         redirect_url: appUrl() + '/pagamento?sumup=return',
         hosted_checkout: { enabled: true }
       })
