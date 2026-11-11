@@ -9,6 +9,15 @@ exports.register = async (req, res) => {
   try {
     const { name, email, password, user_type } = req.body;
 
+    // Contas administrativas nunca podem ser criadas pelo cadastro público.
+    const allowedUserTypes = ['athlete', 'scout', 'club'];
+    if (!allowedUserTypes.includes(user_type)) {
+      return res.status(400).json({ error: 'Tipo de usuário inválido' });
+    }
+    if (!name || !email || !password || String(password).length < 8) {
+      return res.status(400).json({ error: 'Informe nome, e-mail e senha com pelo menos 8 caracteres' });
+    }
+
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
       return res.status(400).json({ error: 'Email já cadastrado' });
