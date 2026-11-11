@@ -176,3 +176,39 @@ exports.sumupStatus = async (req, res) => {
     return res.status(error.status || 500).json({ error: error.message || 'Não foi possível consultar o pagamento.' });
   }
 };
+
+
+// Diagnóstico público sem revelar chaves, tokens ou dados bancários.
+exports.sumupHealth = async (req, res) => {
+  const key = String(process.env.SUMUP_API_KEY || '').trim();
+  if (!key || key.startsWith('sup_pk_')) {
+    return res.status(503).json({ configured: false, authorized: false, merchant_resolved: false, message: 'Chave secreta SumUp ausente ou inválida.' });
+  }
+  try {
+    const profile = await sumup('/v0.1/me');
+    const findCode = (value, depth = 0) => {
+      if (!value || typeof value !== 'object' || depth > 5) return null;
+      for (const [name, item] of Object.entries(value)) {
+        if (name.toLowerCase() === 'merchant_code' && typeof item === 'string' && item.trim()) return item.trim();
+        const nested = findCode(item, depth + 1);
+        if (nested) return nested;
+      }
+      return null;
+    };
+    const merchantCode = String(process.env.SUMUP_MERCHANT_CODE || '').trim() || findCode(profile);
+    return res.json({
+      configured: true,
+      authorized: true,
+      merchant_resolved: Boolean(merchantCode),
+      merchant_source: process.env.SUMUP_MERCHANT_CODE ? 'render_environment' : merchantCode ? 'sumup_profile' : 'missing',
+      message: merchantCode ? 'Credenciais SumUp autenticadas.' : 'API autenticada, mas não foi possível localizar o Merchant Code.'
+    });
+  } catch (error) {
+    return res.status(error.status || 502).json({
+      configured: true,
+      authorized: false,
+      merchant_resolved: false,
+      message: error.status === 401 ? 'A SumUp rejeitou a chave configurada.' : error.message
+    });
+  }
+};
