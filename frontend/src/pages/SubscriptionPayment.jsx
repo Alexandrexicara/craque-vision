@@ -245,6 +245,18 @@ const SubscriptionPayment = () => {
           </div>
         )}
 
+        {/* Pagamento por cartão SumUp: sempre visível enquanto a assinatura não estiver ativa */}
+        {!isActive && (
+          <div className="card p-5 mb-6 border border-accent/40">
+            <h3 className="text-lg font-bold text-white mb-2">Pagar com cartão</h3>
+            <p className="text-gray-400 text-sm mb-4">Pague com cartão de crédito ou débito pela SumUp. A assinatura será liberada após a confirmação do pagamento.</p>
+            <button onClick={handleSumupPayment} disabled={sumupLoading} className="btn-primary w-full py-4 text-base font-bold disabled:opacity-50">
+              <CreditCard className="w-5 h-5 inline mr-2" />
+              {sumupLoading ? 'Conectando à SumUp...' : 'PAGAR COM CARTÃO — SUMUP'}
+            </button>
+          </div>
+        )}
+
         {/* Criar assinatura (se não tiver nenhuma) */}
         {!subscription && !isActive && (
           <div className="card p-6 mb-6">
@@ -256,10 +268,6 @@ const SubscriptionPayment = () => {
               <button onClick={handleCreateSubscription} className="btn-secondary">
                 Continuar com PIX manual
               </button>
-              <button onClick={handleSumupPayment} disabled={sumupLoading} className="btn-primary disabled:opacity-50">
-                <CreditCard className="w-4 h-4 inline mr-2" />
-                {sumupLoading ? 'Conectando à SumUp...' : 'Pagar com cartão SumUp'}
-              </button>
             </div>
           </div>
         )}
@@ -267,15 +275,6 @@ const SubscriptionPayment = () => {
         {/* PIX + Upload (se pendente ou sem comprovante) */}
         {subscription && !isActive && !isPendingApproval && !isRejected && (
           <>
-            <div className="card p-5 mb-6">
-              <h3 className="text-lg font-bold text-white mb-2">Também pode pagar com cartão</h3>
-              <p className="text-gray-400 text-sm mb-4">O pagamento é processado pela SumUp. A assinatura será liberada somente após a confirmação do pagamento.</p>
-              <button onClick={handleSumupPayment} disabled={sumupLoading} className="btn-primary w-full disabled:opacity-50">
-                <CreditCard className="w-4 h-4 inline mr-2" />
-                {sumupLoading ? 'Conectando à SumUp...' : 'Pagar com cartão SumUp'}
-              </button>
-            </div>
-
             {/* Dados PIX manual - permanece disponível */}
             <div className="card p-6 mb-6">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
